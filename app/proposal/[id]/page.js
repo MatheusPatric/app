@@ -56,42 +56,285 @@ export default function ProposalPage() {
   };
 
   const handleExportPDF = async () => {
-    if (!contentRef.current) return;
+    if (!proposal) return;
     
     setExporting(true);
     try {
-      const element = contentRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#000000',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      const contentWidth = pageWidth - (margin * 2);
+      let yPosition = margin;
 
-      pdf.addImage(
-        imgData,
-        'PNG',
-        imgX,
-        imgY,
-        imgWidth * ratio,
-        imgHeight * ratio
-      );
+      // Helper function to add new page if needed
+      const checkAddPage = (heightNeeded) => {
+        if (yPosition + heightNeeded > pageHeight - margin) {
+          pdf.addPage();
+          yPosition = margin;
+          return true;
+        }
+        return false;
+      };
 
+      // Helper function to add image from base64
+      const addImageToPDF = async (imageUrl, x, y, width, height) => {
+        try {
+          if (imageUrl && imageUrl.startsWith('data:image')) {
+            pdf.addImage(imageUrl, 'PNG', x, y, width, height);
+          }
+        } catch (error) {
+          console.error('Error adding image:', error);
+        }
+      };
+
+      // 1. HEADER - Logo
+      if (proposal.clientLogo) {
+        await addImageToPDF(proposal.clientLogo, margin, yPosition, 30, 30);
+        yPosition += 35;
+      }
+
+      // 2. TITLE
+      pdf.setFontSize(24);
+      pdf.setTextColor(163, 230, 53); // lime-400
+      pdf.text(proposal.title || 'Proposta', margin, yPosition);
+      yPosition += 10;
+
+      // 3. COMPANY NAME
+      pdf.setFontSize(16);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(`Para: ${proposal.companyName}`, margin, yPosition);
+      yPosition += 8;
+
+      // 4. CLIENT NAME
+      pdf.setFontSize(12);
+      pdf.setTextColor(200, 200, 200);
+      pdf.text(`Cliente: ${proposal.clientName}`, margin, yPosition);
+      yPosition += 15;
+
+      // 5. DESCRIPTION
+      if (proposal.description) {
+        pdf.setFontSize(11);
+        pdf.setTextColor(220, 220, 220);
+        const descLines = pdf.splitTextToSize(proposal.description, contentWidth);
+        pdf.text(descLines, margin, yPosition);
+        yPosition += (descLines.length * 6) + 10;
+      }
+
+      checkAddPage(40);
+
+      // 6. STRATEGY OVERVIEW
+      if (proposal.strategyOverview) {
+        pdf.setFontSize(14);
+        pdf.setTextColor(163, 230, 53);
+        pdf.text('Visão Geral da Estratégia', margin, yPosition);
+        yPosition += 8;
+
+        pdf.setFontSize(10);
+        pdf.setTextColor(200, 200, 200);
+        const strategyLines = pdf.splitTextToSize(proposal.strategyOverview, contentWidth);
+        
+        for (let i = 0; i < strategyLines.length; i++) {
+          checkAddPage(6);
+          pdf.text(strategyLines[i], margin, yPosition);
+          yPosition += 5;
+        }
+        yPosition += 10;
+      }
+
+      checkAddPage(40);
+
+      // 7. PRICING PLANS
+      if (proposal.plans && proposal.plans.length > 0) {
+        pdf.setFontSize(16);
+        pdf.setTextColor(163, 230, 53);
+        pdf.text('Planos de Serviço', margin, yPosition);
+        yPosition += 10;
+
+        proposal.plans.forEach((plan, index) => {
+          checkAddPage(50);
+
+          // Plan box background (simulated with border)
+          pdf.setDrawColor(163, 230, 53);
+          pdf.setLineWidth(0.5);
+          const boxHeight = 15 + (plan.features?.length || 0) * 5;
+          pdf.rect(margin, yPosition, contentWidth, boxHeight);
+
+          // Plan name
+          pdf.setFontSize(13);
+          pdf.setTextColor(163, 230, 53);
+          pdf.text(plan.name, margin + 5, yPosition + 7);
+
+          // Plan price
+          pdf.setFontSize(16);
+          pdf.setTextColor(255, 255, 255);
+          pdf.text(plan.price, pageWidth - margin - 40, yPosition + 7);
+
+          yPosition += 12;
+
+          // Features
+          if (plan.features && plan.features.length > 0) {
+            pdf.setFontSize(9);
+            pdf.setTextColor(220, 220, 220);
+            
+            plan.features.forEach(feature => {
+              if (yPosition + 5 > pageHeight - margin) {
+                pdf.addPage();
+                yPosition = margin;
+              }
+              pdf.text('✓ ' + feature, margin + 5, yPosition);
+              yPosition += 5;
+            });
+          }
+
+          yPosition += 8;
+        });
+      }
+
+      checkAddPage(40);
+
+      // 8. MAIN CREATIVE
+      if (proposal.mainCreative) {
+        pdf.addPage();
+        yPosition = margin;
+        
+        pdf.setFontSize(14);
+        pdf.setTextColor(163, 230, 53);
+        pdf.text('Criativo do Cliente', margin, yPosition);
+        yPosition += 10;
+
+        const imgWidth = contentWidth * 0.6;
+        const imgHeight = imgWidth * 1.25; // 4:5 aspect ratio
+        
+        await addImageToPDF(
+          proposal.mainCreative, 
+          (pageWidth - imgWidth) / 2, 
+          yPosition, 
+          imgWidth, 
+          imgHeight
+        );
+        yPosition += imgHeight + 10;
+      }
+
+      // 9. CAROUSEL CREATIVES
+      if (proposal.carouselCreatives && proposal.carouselCreatives.length > 0) {
+        checkAddPage(80);
+        
+        pdf.setFontSize(14);
+        pdf.setTextColor(163, 230, 53);
+        pdf.text('Exemplos de Trabalhos', margin, yPosition);
+        yPosition += 10;
+
+        const imgSize = (contentWidth - 10) / 3;
+        let xPosition = margin;
+
+        for (let i = 0; i < Math.min(proposal.carouselCreatives.length, 6); i++) {
+          if (i > 0 && i % 3 === 0) {
+            yPosition += imgSize + 5;
+            xPosition = margin;
+            checkAddPage(imgSize + 10);
+          }
+
+          await addImageToPDF(
+            proposal.carouselCreatives[i],
+            xPosition,
+            yPosition,
+            imgSize - 2,
+            (imgSize - 2) * 1.25
+          );
+
+          xPosition += imgSize;
+        }
+        yPosition += imgSize * 1.25 + 10;
+      }
+
+      // 10. EXPECTED RESULTS
+      if (proposal.expectedResults) {
+        checkAddPage(40);
+        
+        pdf.setFontSize(14);
+        pdf.setTextColor(163, 230, 53);
+        pdf.text('Resultados Esperados', margin, yPosition);
+        yPosition += 8;
+
+        pdf.setFontSize(10);
+        pdf.setTextColor(200, 200, 200);
+        const resultsLines = pdf.splitTextToSize(proposal.expectedResults, contentWidth);
+        
+        for (let i = 0; i < resultsLines.length; i++) {
+          checkAddPage(6);
+          pdf.text(resultsLines[i], margin, yPosition);
+          yPosition += 5;
+        }
+        yPosition += 10;
+      }
+
+      // 11. CUSTOM NOTES
+      if (proposal.customNotes) {
+        checkAddPage(30);
+        
+        pdf.setFontSize(14);
+        pdf.setTextColor(163, 230, 53);
+        pdf.text('Notas Personalizadas', margin, yPosition);
+        yPosition += 8;
+
+        pdf.setFontSize(10);
+        pdf.setTextColor(200, 200, 200);
+        const notesLines = pdf.splitTextToSize(proposal.customNotes, contentWidth);
+        
+        for (let i = 0; i < notesLines.length; i++) {
+          checkAddPage(6);
+          pdf.text(notesLines[i], margin, yPosition);
+          yPosition += 5;
+        }
+        yPosition += 10;
+      }
+
+      // 12. FOOTER - Contact Info
+      pdf.addPage();
+      yPosition = margin;
+
+      pdf.setFontSize(16);
+      pdf.setTextColor(163, 230, 53);
+      pdf.text('Vamos Começar?', margin, yPosition);
+      yPosition += 15;
+
+      pdf.setFontSize(11);
+      pdf.setTextColor(200, 200, 200);
+      
+      if (proposal.brandName) {
+        pdf.text(`Empresa: ${proposal.brandName}`, margin, yPosition);
+        yPosition += 7;
+      }
+      if (proposal.contactEmail) {
+        pdf.text(`Email: ${proposal.contactEmail}`, margin, yPosition);
+        yPosition += 7;
+      }
+      if (proposal.contactPhone) {
+        pdf.text(`Telefone: ${proposal.contactPhone}`, margin, yPosition);
+        yPosition += 7;
+      }
+      if (proposal.contactInstagram) {
+        pdf.text(`Instagram: ${proposal.contactInstagram}`, margin, yPosition);
+        yPosition += 7;
+      }
+      if (proposal.contactWhatsApp) {
+        pdf.text(`WhatsApp: ${proposal.contactWhatsApp}`, margin, yPosition);
+        yPosition += 7;
+      }
+
+      // Add URL at the bottom
+      yPosition = pageHeight - 15;
+      pdf.setFontSize(8);
+      pdf.setTextColor(150, 150, 150);
+      pdf.text(`Proposta: ${window.location.href}`, margin, yPosition);
+
+      // Save PDF
       pdf.save(`proposta-${proposal.companyName}.pdf`);
     } catch (error) {
       console.error('Error exporting PDF:', error);
