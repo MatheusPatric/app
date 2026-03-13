@@ -114,6 +114,30 @@ export async function POST(request) {
       );
     }
 
+    // AI Generate text
+    if (path === 'ai-generate') {
+      const { prompt, fieldType } = body;
+      
+      // Simple AI-like generation (you can integrate real AI here)
+      let text = '';
+      
+      if (fieldType === 'expectedResults') {
+        text = `• Aumento de 30-50% no engajamento orgânico nas primeiras 8 semanas
+• Crescimento de 20-35% na base de seguidores mensalmente
+• Melhoria no posicionamento digital da marca no nicho
+• Maior reconhecimento e autoridade no mercado
+• Conversões aumentadas através de conteúdo estratégico`;
+      } else if (fieldType === 'customNotes') {
+        text = `Esta proposta foi elaborada considerando as necessidades específicas e o perfil do seu negócio. Todos os serviços são personalizáveis e adaptáveis conforme a evolução da parceria.
+
+Nosso compromisso é com resultados reais e mensuráveis. Trabalhamos com transparência total, relatórios mensais e reuniões estratégicas para alinhamento contínuo.
+
+Estamos prontos para iniciar e transformar sua presença digital!`;
+      }
+      
+      return NextResponse.json({ text }, { headers: corsHeaders() });
+    }
+
     return NextResponse.json(
       { error: 'Route not found' },
       { status: 404, headers: corsHeaders() }
