@@ -14,6 +14,7 @@ export default function ProposalPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const contentRef = useRef(null);
   const carouselRef = useRef(null);
 
@@ -295,7 +296,7 @@ export default function ProposalPage() {
         yPosition += 10;
       }
 
-      // 12. FOOTER - Contact Info
+      // 12. FOOTER - Contact Info with CLICKABLE LINKS
       pdf.addPage();
       yPosition = margin;
 
@@ -328,11 +329,29 @@ export default function ProposalPage() {
         yPosition += 7;
       }
 
-      // Add URL at the bottom
-      yPosition = pageHeight - 15;
-      pdf.setFontSize(8);
+      yPosition += 10;
+
+      // CLICKABLE LINKS
+      pdf.setFontSize(12);
+      pdf.setTextColor(163, 230, 53);
+      
+      // WhatsApp Link
+      const whatsappUrl = `https://wa.me/${proposal.contactWhatsApp?.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Gostaria de conversar sobre a proposta')}`;
+      pdf.textWithLink('📱 Falar no WhatsApp', margin, yPosition, { url: whatsappUrl });
+      yPosition += 10;
+
+      // Accept Proposal Link
+      const acceptUrl = `${window.location.origin}/proposal/${params.id}/obrigado`;
+      pdf.textWithLink('✅ Aceitar Proposta Online', margin, yPosition, { url: acceptUrl });
+      yPosition += 10;
+
+      // Proposal Link
+      pdf.setFontSize(9);
       pdf.setTextColor(150, 150, 150);
-      pdf.text(`Proposta: ${window.location.href}`, margin, yPosition);
+      pdf.text('Link da proposta:', margin, yPosition);
+      yPosition += 5;
+      pdf.setTextColor(100, 150, 255);
+      pdf.textWithLink(window.location.href, margin, yPosition, { url: window.location.href });
 
       // Save PDF
       pdf.save(`proposta-${proposal.companyName}.pdf`);
@@ -348,6 +367,11 @@ export default function ProposalPage() {
     const message = `Olá! Gostaria de conversar sobre a proposta: ${proposal.title}`;
     const phone = proposal.contactWhatsApp?.replace(/\D/g, '') || '';
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+  };
+
+  const handleAcceptProposal = () => {
+    const planParam = selectedPlan ? `?plan=${encodeURIComponent(selectedPlan.name)}` : '';
+    window.location.href = `/proposal/${params.id}/obrigado${planParam}`;
   };
 
   if (loading) {
@@ -456,20 +480,30 @@ export default function ProposalPage() {
         {proposal.plans && proposal.plans.length > 0 && (
           <section className="py-16">
             <div className="container mx-auto px-4">
-              <h2 className="text-3xl md:text-4xl font-bold text-white mb-12 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 text-center">
                 Planos de <span className="text-lime-400">Serviço</span>
               </h2>
+              <p className="text-zinc-400 text-center mb-12">Clique no plano para selecioná-lo</p>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
                 {proposal.plans.map((plan, index) => (
                   <Card
                     key={index}
-                    className={`bg-zinc-900/50 border-2 ${
-                      index === 1
+                    onClick={() => setSelectedPlan(plan)}
+                    className={`bg-zinc-900/50 border-2 cursor-pointer transition-all duration-300 p-8 relative overflow-hidden group ${
+                      selectedPlan?.name === plan.name
+                        ? 'border-lime-400 scale-105 shadow-xl shadow-lime-400/30 ring-4 ring-lime-400/20'
+                        : index === 1
                         ? 'border-lime-400 scale-105 shadow-xl shadow-lime-400/20'
-                        : 'border-zinc-800'
-                    } p-8 relative overflow-hidden group hover:border-lime-400/50 transition-all duration-300`}
+                        : 'border-zinc-800 hover:border-lime-400/50'
+                    }`}
                   >
-                    {index === 1 && (
+                    {selectedPlan?.name === plan.name && (
+                      <div className="absolute top-0 left-0 bg-lime-400 text-black text-xs font-bold px-4 py-1 rounded-br-lg flex items-center gap-1">
+                        <Check className="w-3 h-3" />
+                        SELECIONADO
+                      </div>
+                    )}
+                    {index === 1 && selectedPlan?.name !== plan.name && (
                       <div className="absolute top-0 right-0 bg-lime-400 text-black text-xs font-bold px-4 py-1 rounded-bl-lg">
                         POPULAR
                       </div>
@@ -487,6 +521,13 @@ export default function ProposalPage() {
                         </li>
                       ))}
                     </ul>
+                    {selectedPlan?.name === plan.name && (
+                      <div className="mt-4 pt-4 border-t border-lime-400/30">
+                        <p className="text-lime-400 text-sm font-semibold text-center">
+                          ✓ Clique em "Aceitar Proposta" para continuar
+                        </p>
+                      </div>
+                    )}
                   </Card>
                 ))}
               </div>
@@ -696,9 +737,15 @@ export default function ProposalPage() {
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
                 Vamos <span className="text-lime-400">Começar?</span>
               </h2>
-              <p className="text-xl text-zinc-300 mb-10">
+              <p className="text-xl text-zinc-300 mb-4">
                 Estamos prontos para transformar sua presença digital
               </p>
+              {selectedPlan && (
+                <div className="mb-6 inline-flex items-center gap-2 bg-lime-400/10 border border-lime-400/30 rounded-full px-6 py-3">
+                  <Check className="w-5 h-5 text-lime-400" />
+                  <span className="text-white font-semibold">Plano selecionado: {selectedPlan.name}</span>
+                </div>
+              )}
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button
                   onClick={handleWhatsApp}
@@ -710,7 +757,7 @@ export default function ProposalPage() {
                   Falar no WhatsApp
                 </Button>
                 <Button
-                  onClick={() => window.location.href = `/proposal/${params.id}/obrigado`}
+                  onClick={handleAcceptProposal}
                   size="lg"
                   className="bg-lime-400 hover:bg-lime-500 text-black font-bold text-lg px-8 py-6 shadow-lg shadow-lime-400/20"
                 >
@@ -718,6 +765,11 @@ export default function ProposalPage() {
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </div>
+              {!selectedPlan && (
+                <p className="text-zinc-500 text-sm mt-4">
+                  Dica: Clique em um plano acima para selecioná-lo antes de aceitar
+                </p>
+              )}
             </div>
           </div>
         </section>
