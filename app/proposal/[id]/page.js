@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
-import { Check, MessageCircle, Download, Link2, ArrowRight } from 'lucide-react';
+import { Check, MessageCircle, Download, Link2, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import jsPDF from 'jspdf';
@@ -13,13 +13,29 @@ export default function ProposalPage() {
   const [proposal, setProposal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const contentRef = useRef(null);
+  const carouselRef = useRef(null);
 
   useEffect(() => {
     if (params?.id) {
       fetchProposal();
     }
   }, [params?.id]);
+
+  // Auto-scroll carousel
+  useEffect(() => {
+    if (proposal?.carouselCreatives?.length > 3) {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => {
+          const maxSlide = proposal.carouselCreatives.length - 3;
+          return prev >= maxSlide ? 0 : prev + 1;
+        });
+      }, 3000); // Change every 3 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [proposal?.carouselCreatives?.length]);
 
   const fetchProposal = async () => {
     try {
