@@ -271,6 +271,148 @@ export default function ProposalPage() {
           </section>
         )}
 
+        {/* Creatives Gallery Section */}
+        {(proposal.mainCreative || (proposal.carouselCreatives && proposal.carouselCreatives.length > 0)) && (
+          <section className="py-16">
+            <div className="container mx-auto px-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-12 text-center">
+                Nossos <span className="text-lime-400">Criativos</span>
+              </h2>
+              
+              <div className="max-w-6xl mx-auto">
+                {/* Main Creative + Carousel Layout */}
+                <div className="flex flex-col lg:flex-row gap-8 items-start">
+                  
+                  {/* Main Creative - Fixed Large */}
+                  {proposal.mainCreative && (
+                    <div className="lg:w-1/2 flex-shrink-0">
+                      <div className="sticky top-24">
+                        <div className="relative aspect-[4/5] rounded-xl overflow-hidden border-4 border-lime-400 shadow-2xl shadow-lime-400/20">
+                          <img
+                            src={proposal.mainCreative}
+                            alt="Criativo Principal"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                            <div className="inline-block bg-lime-400 text-black px-4 py-2 rounded-full text-sm font-bold">
+                              Criativo do Cliente
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Carousel - Smaller Images */}
+                  {proposal.carouselCreatives && proposal.carouselCreatives.length > 0 && (
+                    <div className="lg:w-1/2 flex-1">
+                      <div className="mb-4 text-center lg:text-left">
+                        <h3 className="text-xl font-semibold text-white mb-2">
+                          Exemplos de Trabalhos
+                        </h3>
+                        <p className="text-zinc-400 text-sm">
+                          Criativos de outros clientes do mesmo nicho
+                        </p>
+                      </div>
+                      
+                      <div className="relative">
+                        {/* Carousel Container */}
+                        <div className="overflow-hidden rounded-lg">
+                          <div
+                            ref={carouselRef}
+                            className="flex transition-transform duration-500 ease-in-out"
+                            style={{
+                              transform: `translateX(-${currentSlide * (100 / 3)}%)`,
+                            }}
+                          >
+                            {proposal.carouselCreatives.map((creative, index) => (
+                              <div
+                                key={index}
+                                className="w-1/3 flex-shrink-0 px-2"
+                              >
+                                <div className="aspect-[4/5] rounded-lg overflow-hidden border-2 border-zinc-800 hover:border-lime-400/50 transition-all shadow-lg">
+                                  <img
+                                    src={creative}
+                                    alt={`Exemplo ${index + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Navigation Buttons */}
+                        {proposal.carouselCreatives.length > 3 && (
+                          <>
+                            <button
+                              onClick={() =>
+                                setCurrentSlide((prev) =>
+                                  prev === 0 ? proposal.carouselCreatives.length - 3 : prev - 1
+                                )
+                              }
+                              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-lime-400 hover:bg-lime-500 text-black p-2 rounded-full shadow-lg z-10"
+                            >
+                              <ChevronLeft className="w-5 h-5" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                setCurrentSlide((prev) =>
+                                  prev >= proposal.carouselCreatives.length - 3 ? 0 : prev + 1
+                                )
+                              }
+                              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-lime-400 hover:bg-lime-500 text-black p-2 rounded-full shadow-lg z-10"
+                            >
+                              <ChevronRight className="w-5 h-5" />
+                            </button>
+                          </>
+                        )}
+
+                        {/* Dots Indicator */}
+                        {proposal.carouselCreatives.length > 3 && (
+                          <div className="flex justify-center gap-2 mt-6">
+                            {Array.from({
+                              length: proposal.carouselCreatives.length - 2,
+                            }).map((_, index) => (
+                              <button
+                                key={index}
+                                onClick={() => setCurrentSlide(index)}
+                                className={`w-2 h-2 rounded-full transition-all ${
+                                  currentSlide === index
+                                    ? 'bg-lime-400 w-8'
+                                    : 'bg-zinc-600 hover:bg-zinc-500'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Grid view for 3 or less items */}
+                      {proposal.carouselCreatives.length <= 3 && (
+                        <div className="grid grid-cols-3 gap-4">
+                          {proposal.carouselCreatives.map((creative, index) => (
+                            <div
+                              key={index}
+                              className="aspect-[4/5] rounded-lg overflow-hidden border-2 border-zinc-800 hover:border-lime-400/50 transition-all shadow-lg"
+                            >
+                              <img
+                                src={creative}
+                                alt={`Exemplo ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Expected Results Section */}
         {proposal.expectedResults && (
           <section className="py-16">
