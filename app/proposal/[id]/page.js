@@ -279,13 +279,13 @@ export default function ProposalPage() {
                 Nossos <span className="text-lime-400">Criativos</span>
               </h2>
               
-              <div className="max-w-6xl mx-auto">
+              <div className="max-w-7xl mx-auto">
                 {/* Main Creative + Carousel Layout */}
-                <div className="flex flex-col lg:flex-row gap-8 items-start">
+                <div className="flex flex-col lg:flex-row gap-6 items-start">
                   
-                  {/* Main Creative - Fixed Large */}
+                  {/* Main Creative - Larger (60%) */}
                   {proposal.mainCreative && (
-                    <div className="lg:w-1/2 flex-shrink-0">
+                    <div className="w-full lg:w-[58%] flex-shrink-0">
                       <div className="sticky top-24">
                         <div className="relative aspect-[4/5] rounded-xl overflow-hidden border-4 border-lime-400 shadow-2xl shadow-lime-400/20">
                           <img
@@ -303,15 +303,15 @@ export default function ProposalPage() {
                     </div>
                   )}
 
-                  {/* Carousel - Smaller Images */}
+                  {/* Carousel - Smaller (40%) */}
                   {proposal.carouselCreatives && proposal.carouselCreatives.length > 0 && (
-                    <div className="lg:w-1/2 flex-1">
-                      <div className="mb-4 text-center lg:text-left">
-                        <h3 className="text-xl font-semibold text-white mb-2">
+                    <div className="w-full lg:w-[42%] flex-1">
+                      <div className="mb-6 text-center lg:text-left">
+                        <h3 className="text-lg font-semibold text-white mb-1">
                           Exemplos de Trabalhos
                         </h3>
-                        <p className="text-zinc-400 text-sm">
-                          Criativos de outros clientes do mesmo nicho
+                        <p className="text-zinc-400 text-xs">
+                          Criativos de outros clientes
                         </p>
                       </div>
                       
@@ -320,15 +320,15 @@ export default function ProposalPage() {
                         <div className="overflow-hidden rounded-lg">
                           <div
                             ref={carouselRef}
-                            className="flex transition-transform duration-500 ease-in-out"
+                            className="flex transition-transform duration-500 ease-in-out gap-2"
                             style={{
-                              transform: `translateX(-${currentSlide * (100 / 3)}%)`,
+                              transform: `translateX(-${currentSlide * 33.33}%)`,
                             }}
                           >
                             {proposal.carouselCreatives.map((creative, index) => (
                               <div
                                 key={index}
-                                className="w-1/3 flex-shrink-0 px-2"
+                                className="w-[calc(33.33%-0.5rem)] flex-shrink-0"
                               >
                                 <div className="aspect-[4/5] rounded-lg overflow-hidden border-2 border-zinc-800 hover:border-lime-400/50 transition-all shadow-lg">
                                   <img
@@ -351,9 +351,9 @@ export default function ProposalPage() {
                                   prev === 0 ? proposal.carouselCreatives.length - 3 : prev - 1
                                 )
                               }
-                              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 bg-lime-400 hover:bg-lime-500 text-black p-2 rounded-full shadow-lg z-10"
+                              className="absolute -left-3 top-1/2 -translate-y-1/2 bg-lime-400 hover:bg-lime-500 text-black p-1.5 rounded-full shadow-lg z-10"
                             >
-                              <ChevronLeft className="w-5 h-5" />
+                              <ChevronLeft className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() =>
@@ -361,26 +361,26 @@ export default function ProposalPage() {
                                   prev >= proposal.carouselCreatives.length - 3 ? 0 : prev + 1
                                 )
                               }
-                              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 bg-lime-400 hover:bg-lime-500 text-black p-2 rounded-full shadow-lg z-10"
+                              className="absolute -right-3 top-1/2 -translate-y-1/2 bg-lime-400 hover:bg-lime-500 text-black p-1.5 rounded-full shadow-lg z-10"
                             >
-                              <ChevronRight className="w-5 h-5" />
+                              <ChevronRight className="w-4 h-4" />
                             </button>
                           </>
                         )}
 
                         {/* Dots Indicator */}
                         {proposal.carouselCreatives.length > 3 && (
-                          <div className="flex justify-center gap-2 mt-6">
+                          <div className="flex justify-center gap-1.5 mt-4">
                             {Array.from({
                               length: proposal.carouselCreatives.length - 2,
                             }).map((_, index) => (
                               <button
                                 key={index}
                                 onClick={() => setCurrentSlide(index)}
-                                className={`w-2 h-2 rounded-full transition-all ${
+                                className={`h-1.5 rounded-full transition-all ${
                                   currentSlide === index
-                                    ? 'bg-lime-400 w-8'
-                                    : 'bg-zinc-600 hover:bg-zinc-500'
+                                    ? 'bg-lime-400 w-6'
+                                    : 'bg-zinc-600 hover:bg-zinc-500 w-1.5'
                                 }`}
                               />
                             ))}
@@ -390,7 +390,7 @@ export default function ProposalPage() {
 
                       {/* Grid view for 3 or less items */}
                       {proposal.carouselCreatives.length <= 3 && (
-                        <div className="grid grid-cols-3 gap-4">
+                        <div className="grid grid-cols-3 gap-2">
                           {proposal.carouselCreatives.map((creative, index) => (
                             <div
                               key={index}
