@@ -1,342 +1,476 @@
 #!/usr/bin/env python3
+"""
+Comprehensive Backend Testing for Proposal Template System
+Tests the complete proposal template functionality as requested.
+"""
 
 import requests
 import json
-import base64
-from io import BytesIO
-from PIL import Image
 import sys
+from datetime import datetime
 
-# Configuration
+# Get base URL from environment
 BASE_URL = "https://client-deck.preview.emergentagent.com/api"
 
-def create_test_image_base64():
-    """Create a small test image and return as base64"""
-    # Create a small 10x10 red image
-    img = Image.new('RGB', (10, 10), color='red')
-    buffer = BytesIO()
-    img.save(buffer, format='PNG')
-    img_data = buffer.getvalue()
-    return f"data:image/png;base64,{base64.b64encode(img_data).decode()}"
+def print_test_result(test_name, success, details=""):
+    """Print formatted test results"""
+    status = "✅ PASS" if success else "❌ FAIL"
+    print(f"{status} - {test_name}")
+    if details:
+        print(f"    {details}")
+    print()
 
-def test_ai_generate_endpoint():
-    """Test the AI generation endpoint with different field types"""
-    print("\n=== Testing AI Generation Endpoint ===")
+def test_create_proposal_with_template():
+    """Test 1: Create New Proposal with Template - Verify template fields are properly stored"""
+    print("🧪 TEST 1: Create New Proposal with Template")
     
-    # Test expectedResults generation
-    try:
-        print("\n1. Testing AI generation for expectedResults...")
-        response = requests.post(f"{BASE_URL}/ai-generate", 
-                               json={"fieldType": "expectedResults", "prompt": "Generate expected results"})
-        
-        if response.status_code == 200:
-            data = response.json()
-            if 'text' in data and data['text']:
-                print("✅ PASS - expectedResults generation successful")
-                print(f"Generated text preview: {data['text'][:100]}...")
-            else:
-                print("❌ FAIL - No text returned in response")
-                return False
-        else:
-            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
-            return False
-            
-    except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
-        return False
-    
-    # Test customNotes generation
-    try:
-        print("\n2. Testing AI generation for customNotes...")
-        response = requests.post(f"{BASE_URL}/ai-generate", 
-                               json={"fieldType": "customNotes", "prompt": "Generate custom notes"})
-        
-        if response.status_code == 200:
-            data = response.json()
-            if 'text' in data and data['text']:
-                print("✅ PASS - customNotes generation successful")
-                print(f"Generated text preview: {data['text'][:100]}...")
-            else:
-                print("❌ FAIL - No text returned in response")
-                return False
-        else:
-            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
-            return False
-            
-    except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
-        return False
-    
-    return True
+    # Template data as defined in CreateProposalModal.js (lines 14-68)
+    template_data = {
+        "clientName": "Maria Santos",
+        "companyName": "Beleza Natural LTDA",
+        "title": "Proposta de Gestão de Conteúdo para Mídias Digitais",
+        "description": "Estratégia completa de posicionamento digital e crescimento nas redes sociais",
+        "strategyOverview": """Nossa estratégia foi desenvolvida para maximizar sua presença digital e criar conexão genuína com seu público.
 
-def test_create_proposal_with_new_fields():
-    """Test creating a proposal with all new fields including creatives and AI-generated content"""
-    print("\n=== Testing Create Proposal with New Fields ===")
+Focamos em três pilares fundamentais:
+
+• Posicionamento Digital: Construir uma identidade forte e reconhecível no ambiente digital
+• Otimização de Perfil: Garantir que seu perfil comunique valor desde o primeiro contato
+• Estratégia de Conteúdo: Criar conteúdos que engajam, educam e convertem
+• Crescimento da Marca: Aumentar autoridade e reconhecimento no seu nicho
+
+Trabalhamos com metodologia comprovada, análise constante de métricas e ajustes estratégicos para garantir os melhores resultados.""",
+        "plans": [
+            {
+                "name": "Plano Essencial",
+                "price": "R$ 2.500",
+                "features": [
+                    "Planejamento estratégico mensal",
+                    "Gestão do Instagram",
+                    "10 conteúdos mensais",
+                    "Até 4 vídeos editados",
+                    "Direcionamento de conteúdo para stories",
+                    "Acompanhamento de engajamento",
+                    "Reunião estratégica mensal"
+                ]
+            },
+            {
+                "name": "Plano Profissional",
+                "price": "R$ 3.000",
+                "features": [
+                    "Tudo do plano Essencial",
+                    "12 conteúdos mensais",
+                    "Até 6 vídeos editados",
+                    "Desenvolvimento e posicionamento digital",
+                    "Estratégia e humanização da marca"
+                ]
+            }
+        ],
+        "mainCreative": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A",
+        "carouselCreatives": [
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A",
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A",
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A"
+        ],
+        "expectedResults": "• Aumento de 30-50% no engajamento orgânico nas primeiras 8 semanas\n• Crescimento de 20-35% na base de seguidores mensalmente\n• Melhoria no posicionamento digital da marca no nicho\n• Maior reconhecimento e autoridade no mercado\n• Conversões aumentadas através de conteúdo estratégico",
+        "customNotes": "Esta proposta foi elaborada considerando as necessidades específicas e o perfil do seu negócio. Todos os serviços são personalizáveis e adaptáveis conforme a evolução da parceria.\n\nNosso compromisso é com resultados reais e mensuráveis. Trabalhamos com transparência total, relatórios mensais e reuniões estratégicas para alinhamento contínuo.\n\nEstamos prontos para iniciar e transformar sua presença digital!",
+        "brandName": "Zeri Solutions",
+        "brandDescription": "A Agencia Zeri surgiu com o proposito de otimizar o tempo de empresários e trazer a tona a identidade dos seus negócios em nichos diversos!",
+        "contactEmail": "zeriagencia@gmail.com",
+        "contactPhone": "84991151503",
+        "contactInstagram": "@zeriagencia",
+        "contactWhatsApp": "5584991151503"
+    }
     
     try:
-        # First generate AI content
-        print("\n1. Generating AI content for proposal...")
-        
-        # Generate expectedResults
-        expected_results_response = requests.post(f"{BASE_URL}/ai-generate", 
-                                                json={"fieldType": "expectedResults"})
-        if expected_results_response.status_code != 200:
-            print(f"❌ FAIL - Could not generate expectedResults: {expected_results_response.text}")
-            return None
-            
-        expected_results = expected_results_response.json()['text']
-        
-        # Generate customNotes
-        custom_notes_response = requests.post(f"{BASE_URL}/ai-generate", 
-                                            json={"fieldType": "customNotes"})
-        if custom_notes_response.status_code != 200:
-            print(f"❌ FAIL - Could not generate customNotes: {custom_notes_response.text}")
-            return None
-            
-        custom_notes = custom_notes_response.json()['text']
-        
-        print("✅ AI content generated successfully")
-        
-        # Create test images
-        main_creative = create_test_image_base64()
-        carousel_creatives = [
-            create_test_image_base64(),
-            create_test_image_base64(),
-            create_test_image_base64()
-        ]
-        
-        # Create proposal with all new fields
-        print("\n2. Creating proposal with new fields...")
-        proposal_data = {
-            "clientName": "João Silva",
-            "companyName": "Tech Solutions LTDA",
-            "title": "Proposta de Gestão de Conteúdo",
-            "mainCreative": main_creative,
-            "carouselCreatives": carousel_creatives,
-            "expectedResults": expected_results,
-            "customNotes": custom_notes,
-            # Pre-filled Zeri Solutions data
-            "brandName": "Zeri Solutions",
-            "contactEmail": "zeriagencia@gmail.com",
-            "contactWhatsApp": "5584991151503"
-        }
-        
-        response = requests.post(f"{BASE_URL}/proposals", json=proposal_data)
+        response = requests.post(f"{BASE_URL}/proposals", json=template_data, timeout=10)
         
         if response.status_code == 201:
-            data = response.json()
-            proposal = data['proposal']
+            proposal = response.json().get('proposal', {})
             
-            # Verify all fields are present
-            required_fields = ['id', 'clientName', 'companyName', 'title', 'mainCreative', 
-                             'carouselCreatives', 'expectedResults', 'customNotes', 
-                             'brandName', 'contactEmail', 'contactWhatsApp', 'createdAt', 'updatedAt']
+            # Verify template fields are properly stored
+            checks = [
+                (proposal.get('title') == template_data['title'], "Template title stored correctly"),
+                (len(proposal.get('plans', [])) == 2, "Two default plans created"),
+                (proposal.get('plans', [{}])[0].get('name') == "Plano Essencial", "Plano Essencial name correct"),
+                (proposal.get('plans', [{}])[0].get('price') == "R$ 2.500", "Plano Essencial price correct"),
+                (proposal.get('plans', [{}, {}])[1].get('name') == "Plano Profissional", "Plano Profissional name correct"),
+                (proposal.get('plans', [{}, {}])[1].get('price') == "R$ 3.000", "Plano Profissional price correct"),
+                (proposal.get('strategyOverview', '').startswith("Nossa estratégia foi desenvolvida"), "Strategy overview template stored"),
+                (proposal.get('brandName') == "Zeri Solutions", "Pre-filled Zeri Solutions brand name"),
+                (proposal.get('contactEmail') == "zeriagencia@gmail.com", "Pre-filled Zeri contact email"),
+                (proposal.get('contactWhatsApp') == "5584991151503", "Pre-filled Zeri WhatsApp"),
+                (proposal.get('mainCreative', '').startswith("data:image/jpeg"), "Main creative stored"),
+                (len(proposal.get('carouselCreatives', [])) == 3, "Carousel creatives stored (3 images)"),
+                (proposal.get('expectedResults', '').startswith("• Aumento de 30-50%"), "Expected results stored"),
+                (proposal.get('customNotes', '').startswith("Esta proposta foi elaborada"), "Custom notes stored")
+            ]
             
-            missing_fields = [field for field in required_fields if field not in proposal]
+            all_passed = all(check[0] for check in checks)
+            details = f"Status: {response.status_code}, ID: {proposal.get('id', 'N/A')}"
             
-            if not missing_fields:
-                print("✅ PASS - Proposal created with all new fields")
-                print(f"Proposal ID: {proposal['id']}")
-                print(f"Main creative length: {len(proposal['mainCreative'])} chars")
-                print(f"Carousel creatives count: {len(proposal['carouselCreatives'])}")
-                print(f"Expected results length: {len(proposal['expectedResults'])} chars")
-                print(f"Custom notes length: {len(proposal['customNotes'])} chars")
-                print(f"Brand name: {proposal['brandName']}")
-                return proposal['id']
+            if all_passed:
+                print_test_result("Create proposal with template", True, details)
+                return proposal.get('id')
             else:
-                print(f"❌ FAIL - Missing fields: {missing_fields}")
+                failed_checks = [check[1] for check in checks if not check[0]]
+                print_test_result("Create proposal with template", False, f"{details}, Failed: {', '.join(failed_checks)}")
                 return None
         else:
-            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
+            print_test_result("Create proposal with template", False, f"Status: {response.status_code}, Response: {response.text}")
             return None
             
     except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
+        print_test_result("Create proposal with template", False, f"Exception: {str(e)}")
         return None
 
-def test_retrieve_proposal_with_new_fields(proposal_id):
-    """Test retrieving a proposal and verify all new fields are present"""
-    print("\n=== Testing Retrieve Proposal with New Fields ===")
+def test_create_proposal_with_custom_prices():
+    """Test 2: Create Proposal with Custom Prices - Verify custom prices are saved correctly"""
+    print("🧪 TEST 2: Create Proposal with Custom Prices")
+    
+    # Template data with modified prices as specified in review request
+    custom_price_data = {
+        "clientName": "João Silva",
+        "companyName": "Tech Innovations LTDA",
+        "title": "Proposta de Gestão de Conteúdo para Mídias Digitais",
+        "plans": [
+            {
+                "name": "Plano Essencial",
+                "price": "R$ 3.200",  # Modified from R$ 2.500
+                "features": [
+                    "Planejamento estratégico mensal",
+                    "Gestão do Instagram",
+                    "10 conteúdos mensais"
+                ]
+            },
+            {
+                "name": "Plano Profissional", 
+                "price": "R$ 4.500",  # Modified from R$ 3.000
+                "features": [
+                    "Tudo do plano Essencial",
+                    "12 conteúdos mensais",
+                    "Até 6 vídeos editados"
+                ]
+            }
+        ],
+        "brandName": "Zeri Solutions",
+        "contactEmail": "zeriagencia@gmail.com"
+    }
     
     try:
-        print(f"\n1. Retrieving proposal {proposal_id}...")
-        response = requests.get(f"{BASE_URL}/proposals/{proposal_id}")
+        response = requests.post(f"{BASE_URL}/proposals", json=custom_price_data, timeout=10)
         
-        if response.status_code == 200:
-            data = response.json()
-            proposal = data['proposal']
+        if response.status_code == 201:
+            proposal = response.json().get('proposal', {})
             
-            # Verify all new fields are properly stored and retrieved
-            checks = [
-                ('mainCreative', 'data:image/png;base64,'),
-                ('carouselCreatives', list),
-                ('expectedResults', str),
-                ('customNotes', str),
-                ('brandName', 'Zeri Solutions'),
-                ('contactEmail', 'zeriagencia@gmail.com'),
-                ('contactWhatsApp', '5584991151503')
-            ]
+            # Verify custom prices are saved correctly
+            essencial_price = proposal.get('plans', [{}])[0].get('price')
+            profissional_price = proposal.get('plans', [{}, {}])[1].get('price')
             
-            all_passed = True
-            for field, expected in checks:
-                if field not in proposal:
-                    print(f"❌ FAIL - Missing field: {field}")
-                    all_passed = False
-                elif isinstance(expected, str) and expected.startswith('data:image'):
-                    if not proposal[field].startswith(expected):
-                        print(f"❌ FAIL - {field} doesn't start with expected format")
-                        all_passed = False
-                    else:
-                        print(f"✅ {field} format correct")
-                elif isinstance(expected, type):
-                    if not isinstance(proposal[field], expected):
-                        print(f"❌ FAIL - {field} is not of type {expected}")
-                        all_passed = False
-                    else:
-                        print(f"✅ {field} type correct ({len(proposal[field])} items)" if expected == list else f"✅ {field} type correct")
-                elif isinstance(expected, str):
-                    if proposal[field] != expected:
-                        print(f"❌ FAIL - {field} value mismatch. Expected: {expected}, Got: {proposal[field]}")
-                        all_passed = False
-                    else:
-                        print(f"✅ {field} value correct")
+            custom_prices_correct = (
+                essencial_price == "R$ 3.200" and 
+                profissional_price == "R$ 4.500"
+            )
             
-            if all_passed:
-                print("✅ PASS - All new fields properly stored and retrieved")
-                return True
-            else:
-                print("❌ FAIL - Some field validations failed")
-                return False
+            details = f"Status: {response.status_code}, Essencial: {essencial_price}, Profissional: {profissional_price}"
+            print_test_result("Create proposal with custom prices", custom_prices_correct, details)
+            return proposal.get('id') if custom_prices_correct else None
+            
         else:
-            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
-            return False
+            print_test_result("Create proposal with custom prices", False, f"Status: {response.status_code}")
+            return None
             
     except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
-        return False
+        print_test_result("Create proposal with custom prices", False, f"Exception: {str(e)}")
+        return None
 
-def test_update_proposal_with_creatives(proposal_id):
-    """Test updating a proposal to modify carouselCreatives"""
-    print("\n=== Testing Update Proposal with Creatives ===")
+def test_all_template_features_together():
+    """Test 3: Verify All Template Features Work Together"""
+    print("🧪 TEST 3: Verify All Template Features Work Together")
+    
+    # Complete template data with all features as specified in review request
+    complete_data = {
+        "clientName": "Maria Santos",
+        "companyName": "Beleza Natural LTDA",
+        "title": "Proposta de Gestão de Conteúdo para Mídias Digitais",
+        "strategyOverview": """Nossa estratégia foi desenvolvida para maximizar sua presença digital e criar conexão genuína com seu público.
+
+Focamos em três pilares fundamentais:
+
+• Posicionamento Digital: Construir uma identidade forte e reconhecível no ambiente digital
+• Otimização de Perfil: Garantir que seu perfil comunique valor desde o primeiro contato
+• Estratégia de Conteúdo: Criar conteúdos que engajam, educam e convertem
+• Crescimento da Marca: Aumentar autoridade e reconhecimento no seu nicho
+
+Trabalhamos com metodologia comprovada, análise constante de métricas e ajustes estratégicos para garantir os melhores resultados.""",
+        "plans": [
+            {
+                "name": "Plano Essencial",
+                "price": "R$ 3.200",
+                "features": [
+                    "Planejamento estratégico mensal",
+                    "Gestão do Instagram",
+                    "10 conteúdos mensais"
+                ]
+            }
+        ],
+        "mainCreative": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A",
+        "carouselCreatives": [
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A",
+            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/2wBDAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQH/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwA/8A8A"
+        ],
+        "expectedResults": "• Aumento de 30-50% no engajamento orgânico nas primeiras 8 semanas\n• Crescimento de 20-35% na base de seguidores mensalmente\n• Melhoria no posicionamento digital da marca no nicho",
+        "customNotes": "Esta proposta foi elaborada considerando as necessidades específicas e o perfil do seu negócio.",
+        "brandName": "Zeri Solutions",
+        "contactEmail": "zeriagencia@gmail.com"
+    }
     
     try:
-        print(f"\n1. Updating proposal {proposal_id} with new carousel creatives...")
+        # Create proposal
+        response = requests.post(f"{BASE_URL}/proposals", json=complete_data, timeout=10)
         
-        # Create new carousel creatives
-        new_carousel_creatives = [
-            create_test_image_base64(),
-            create_test_image_base64(),
-            create_test_image_base64(),
-            create_test_image_base64()  # Adding one more image
-        ]
+        if response.status_code == 201:
+            proposal = response.json().get('proposal', {})
+            proposal_id = proposal.get('id')
+            
+            # Retrieve and verify all fields are correct
+            get_response = requests.get(f"{BASE_URL}/proposals/{proposal_id}", timeout=10)
+            
+            if get_response.status_code == 200:
+                retrieved_proposal = get_response.json().get('proposal', {})
+                
+                # Verify all template features
+                checks = [
+                    (retrieved_proposal.get('title') == complete_data['title'], "Template title"),
+                    (retrieved_proposal.get('strategyOverview') == complete_data['strategyOverview'], "Strategy overview"),
+                    (len(retrieved_proposal.get('plans', [])) == 1, "Plans count"),
+                    (retrieved_proposal.get('plans', [{}])[0].get('price') == "R$ 3.200", "Custom price"),
+                    (retrieved_proposal.get('mainCreative') == complete_data['mainCreative'], "Main creative"),
+                    (len(retrieved_proposal.get('carouselCreatives', [])) == 2, "Carousel creatives count"),
+                    (retrieved_proposal.get('expectedResults') == complete_data['expectedResults'], "Expected results"),
+                    (retrieved_proposal.get('customNotes') == complete_data['customNotes'], "Custom notes"),
+                    (retrieved_proposal.get('brandName') == "Zeri Solutions", "Zeri brand name"),
+                    (retrieved_proposal.get('contactEmail') == "zeriagencia@gmail.com", "Zeri contact email")
+                ]
+                
+                all_passed = all(check[0] for check in checks)
+                details = f"Status: {response.status_code}, Retrieved: {get_response.status_code}, ID: {proposal_id}"
+                
+                if all_passed:
+                    print_test_result("All template features work together", True, details)
+                    return proposal_id
+                else:
+                    failed_checks = [check[1] for check in checks if not check[0]]
+                    print_test_result("All template features work together", False, f"{details}, Failed: {', '.join(failed_checks)}")
+                    return None
+            else:
+                print_test_result("All template features work together", False, f"Failed to retrieve proposal: {get_response.status_code}")
+                return None
+        else:
+            print_test_result("All template features work together", False, f"Failed to create proposal: {response.status_code}")
+            return None
+            
+    except Exception as e:
+        print_test_result("All template features work together", False, f"Exception: {str(e)}")
+        return None
+
+def test_update_proposal_template_preservation(proposal_id):
+    """Test 4: Update Proposal - Verify Template Doesn't Override"""
+    print("🧪 TEST 4: Update Proposal - Verify Template Doesn't Override")
+    
+    if not proposal_id:
+        print_test_result("Update proposal template preservation", False, "No proposal ID provided")
+        return False
+    
+    try:
+        # First, get the current proposal
+        get_response = requests.get(f"{BASE_URL}/proposals/{proposal_id}", timeout=10)
         
+        if get_response.status_code != 200:
+            print_test_result("Update proposal template preservation", False, f"Failed to get proposal: {get_response.status_code}")
+            return False
+            
+        original_proposal = get_response.json().get('proposal', {})
+        
+        # Update only the price of the first plan
         update_data = {
-            "carouselCreatives": new_carousel_creatives,
-            "title": "Updated Proposta de Gestão de Conteúdo"
+            "plans": [
+                {
+                    "name": original_proposal.get('plans', [{}])[0].get('name'),
+                    "price": "R$ 5.000",  # Changed price
+                    "features": original_proposal.get('plans', [{}])[0].get('features', [])
+                }
+            ]
         }
         
-        response = requests.put(f"{BASE_URL}/proposals/{proposal_id}", json=update_data)
+        # Update the proposal
+        update_response = requests.put(f"{BASE_URL}/proposals/{proposal_id}", json=update_data, timeout=10)
         
-        if response.status_code == 200:
-            data = response.json()
-            proposal = data['proposal']
+        if update_response.status_code == 200:
+            updated_proposal = update_response.json().get('proposal', {})
             
-            # Verify the update worked correctly
-            if (len(proposal['carouselCreatives']) == 4 and 
-                proposal['title'] == "Updated Proposta de Gestão de Conteúdo"):
-                print("✅ PASS - Proposal updated successfully")
-                print(f"New carousel creatives count: {len(proposal['carouselCreatives'])}")
-                print(f"Updated title: {proposal['title']}")
+            # Verify only the updated field changes, template shouldn't reset other fields
+            checks = [
+                (updated_proposal.get('plans', [{}])[0].get('price') == "R$ 5.000", "Price updated correctly"),
+                (updated_proposal.get('title') == original_proposal.get('title'), "Title preserved"),
+                (updated_proposal.get('strategyOverview') == original_proposal.get('strategyOverview'), "Strategy overview preserved"),
+                (updated_proposal.get('brandName') == original_proposal.get('brandName'), "Brand name preserved"),
+                (updated_proposal.get('contactEmail') == original_proposal.get('contactEmail'), "Contact email preserved"),
+                (updated_proposal.get('mainCreative') == original_proposal.get('mainCreative'), "Main creative preserved"),
+                (len(updated_proposal.get('carouselCreatives', [])) == len(original_proposal.get('carouselCreatives', [])), "Carousel creatives preserved"),
+                (updated_proposal.get('expectedResults') == original_proposal.get('expectedResults'), "Expected results preserved"),
+                (updated_proposal.get('customNotes') == original_proposal.get('customNotes'), "Custom notes preserved")
+            ]
+            
+            all_passed = all(check[0] for check in checks)
+            details = f"Status: {update_response.status_code}, Updated price: {updated_proposal.get('plans', [{}])[0].get('price')}"
+            
+            if all_passed:
+                print_test_result("Update proposal template preservation", True, details)
                 return True
             else:
-                print(f"❌ FAIL - Update verification failed")
-                print(f"Carousel count: {len(proposal['carouselCreatives'])}, Title: {proposal['title']}")
+                failed_checks = [check[1] for check in checks if not check[0]]
+                print_test_result("Update proposal template preservation", False, f"{details}, Failed: {', '.join(failed_checks)}")
                 return False
         else:
-            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
+            print_test_result("Update proposal template preservation", False, f"Update failed: {update_response.status_code}")
             return False
             
     except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
+        print_test_result("Update proposal template preservation", False, f"Exception: {str(e)}")
         return False
 
-def test_upload_image_endpoint():
-    """Test the upload image endpoint"""
-    print("\n=== Testing Upload Image Endpoint ===")
+def test_crud_operations_with_template():
+    """Test 5: Verify All CRUD Operations Work with Template System"""
+    print("🧪 TEST 5: Verify All CRUD Operations Work with Template System")
     
     try:
-        print("\n1. Testing image upload...")
-        test_image = create_test_image_base64()
+        # Test data with template
+        test_data = {
+            "clientName": "Ana Costa",
+            "companyName": "Moda & Estilo LTDA",
+            "title": "Proposta de Gestão de Conteúdo para Mídias Digitais",
+            "plans": [
+                {
+                    "name": "Plano Essencial",
+                    "price": "R$ 2.800",
+                    "features": ["Gestão do Instagram", "10 posts mensais"]
+                }
+            ],
+            "brandName": "Zeri Solutions",
+            "contactEmail": "zeriagencia@gmail.com"
+        }
         
-        response = requests.post(f"{BASE_URL}/upload-image", 
-                               json={"imageData": test_image})
-        
-        if response.status_code == 200:
-            data = response.json()
-            if 'imageUrl' in data and data['imageUrl'] == test_image:
-                print("✅ PASS - Image upload endpoint working correctly")
-                return True
-            else:
-                print("❌ FAIL - Image URL not returned correctly")
-                return False
-        else:
-            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
+        # CREATE
+        create_response = requests.post(f"{BASE_URL}/proposals", json=test_data, timeout=10)
+        if create_response.status_code != 201:
+            print_test_result("CRUD operations with template", False, f"CREATE failed: {create_response.status_code}")
             return False
             
+        proposal_id = create_response.json().get('proposal', {}).get('id')
+        
+        # READ (single)
+        read_response = requests.get(f"{BASE_URL}/proposals/{proposal_id}", timeout=10)
+        if read_response.status_code != 200:
+            print_test_result("CRUD operations with template", False, f"READ failed: {read_response.status_code}")
+            return False
+            
+        # READ (all)
+        read_all_response = requests.get(f"{BASE_URL}/proposals", timeout=10)
+        if read_all_response.status_code != 200:
+            print_test_result("CRUD operations with template", False, f"READ ALL failed: {read_all_response.status_code}")
+            return False
+            
+        # UPDATE
+        update_data = {"plans": [{"name": "Plano Essencial", "price": "R$ 3.100", "features": ["Gestão do Instagram", "12 posts mensais"]}]}
+        update_response = requests.put(f"{BASE_URL}/proposals/{proposal_id}", json=update_data, timeout=10)
+        if update_response.status_code != 200:
+            print_test_result("CRUD operations with template", False, f"UPDATE failed: {update_response.status_code}")
+            return False
+            
+        # Verify update preserved template data
+        updated_proposal = update_response.json().get('proposal', {})
+        template_preserved = (
+            updated_proposal.get('title') == test_data['title'] and
+            updated_proposal.get('brandName') == test_data['brandName'] and
+            updated_proposal.get('plans', [{}])[0].get('price') == "R$ 3.100"
+        )
+        
+        if not template_preserved:
+            print_test_result("CRUD operations with template", False, "UPDATE didn't preserve template data")
+            return False
+            
+        # DELETE
+        delete_response = requests.delete(f"{BASE_URL}/proposals/{proposal_id}", timeout=10)
+        if delete_response.status_code != 200:
+            print_test_result("CRUD operations with template", False, f"DELETE failed: {delete_response.status_code}")
+            return False
+            
+        # Verify deletion
+        verify_delete_response = requests.get(f"{BASE_URL}/proposals/{proposal_id}", timeout=10)
+        if verify_delete_response.status_code != 404:
+            print_test_result("CRUD operations with template", False, f"DELETE verification failed: {verify_delete_response.status_code}")
+            return False
+            
+        print_test_result("CRUD operations with template", True, "All CRUD operations working with template system")
+        return True
+        
     except Exception as e:
-        print(f"❌ FAIL - Exception: {str(e)}")
+        print_test_result("CRUD operations with template", False, f"Exception: {str(e)}")
         return False
 
 def main():
-    """Run all tests for the updated proposal generator"""
-    print("🚀 Starting Proposal Generator New Features Test Suite")
+    """Run all template system tests"""
+    print("=" * 80)
+    print("🚀 PROPOSAL TEMPLATE SYSTEM TESTING")
+    print("=" * 80)
     print(f"Testing against: {BASE_URL}")
+    print(f"Test started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print()
     
-    test_results = []
+    # Track test results
+    results = []
     
-    # Test 1: AI Generation Endpoint
-    test_results.append(("AI Generation Endpoint", test_ai_generate_endpoint()))
+    # Test 1: Create New Proposal with Template
+    proposal_id_1 = test_create_proposal_with_template()
+    results.append(("Create proposal with template", proposal_id_1 is not None))
     
-    # Test 2: Upload Image Endpoint
-    test_results.append(("Upload Image Endpoint", test_upload_image_endpoint()))
+    # Test 2: Create Proposal with Custom Prices
+    proposal_id_2 = test_create_proposal_with_custom_prices()
+    results.append(("Create proposal with custom prices", proposal_id_2 is not None))
     
-    # Test 3: Create Proposal with New Fields
-    proposal_id = test_create_proposal_with_new_fields()
-    test_results.append(("Create Proposal with New Fields", proposal_id is not None))
+    # Test 3: Verify All Template Features Work Together
+    proposal_id_3 = test_all_template_features_together()
+    results.append(("All template features work together", proposal_id_3 is not None))
     
-    if proposal_id:
-        # Test 4: Retrieve Proposal with New Fields
-        test_results.append(("Retrieve Proposal with New Fields", 
-                           test_retrieve_proposal_with_new_fields(proposal_id)))
-        
-        # Test 5: Update Proposal with Creatives
-        test_results.append(("Update Proposal with Creatives", 
-                           test_update_proposal_with_creatives(proposal_id)))
-    else:
-        test_results.append(("Retrieve Proposal with New Fields", False))
-        test_results.append(("Update Proposal with Creatives", False))
+    # Test 4: Update Proposal - Verify Template Doesn't Override
+    update_success = test_update_proposal_template_preservation(proposal_id_3)
+    results.append(("Update proposal template preservation", update_success))
     
-    # Print final results
-    print("\n" + "="*60)
-    print("🏁 FINAL TEST RESULTS")
-    print("="*60)
+    # Test 5: Verify All CRUD Operations Work with Template System
+    crud_success = test_crud_operations_with_template()
+    results.append(("CRUD operations with template", crud_success))
     
-    passed = 0
-    total = len(test_results)
+    # Summary
+    print("=" * 80)
+    print("📊 TEST SUMMARY")
+    print("=" * 80)
     
-    for test_name, result in test_results:
-        status = "✅ PASS" if result else "❌ FAIL"
+    passed = sum(1 for _, success in results if success)
+    total = len(results)
+    
+    for test_name, success in results:
+        status = "✅ PASS" if success else "❌ FAIL"
         print(f"{status} - {test_name}")
-        if result:
-            passed += 1
     
-    print(f"\nSUMMARY: {passed}/{total} tests passed")
+    print()
+    print(f"Results: {passed}/{total} tests passed")
     
     if passed == total:
-        print("🎉 ALL TESTS PASSED! New features are working correctly.")
+        print("🎉 ALL TEMPLATE SYSTEM TESTS PASSED!")
         return 0
     else:
-        print("⚠️  Some tests failed. Please check the implementation.")
+        print("⚠️  SOME TEMPLATE SYSTEM TESTS FAILED!")
         return 1
 
 if __name__ == "__main__":
