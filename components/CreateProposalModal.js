@@ -341,8 +341,9 @@ Trabalhamos com metodologia comprovada, análise constante de métricas e ajuste
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-lime-400">Detalhes da Proposta</h3>
               <div>
-                <Label htmlFor="title" className="text-zinc-300">
+                <Label htmlFor="title" className="text-zinc-300 flex items-center gap-2">
                   Título da Proposta
+                  <span className="text-xs text-lime-400">(Já preenchido - pode editar)</span>
                 </Label>
                 <Input
                   id="title"
@@ -355,8 +356,9 @@ Trabalhamos com metodologia comprovada, análise constante de métricas e ajuste
                 />
               </div>
               <div>
-                <Label htmlFor="description" className="text-zinc-300">
+                <Label htmlFor="description" className="text-zinc-300 flex items-center gap-2">
                   Descrição
+                  <span className="text-xs text-lime-400">(Já preenchido - pode editar)</span>
                 </Label>
                 <Textarea
                   id="description"
@@ -395,13 +397,16 @@ Trabalhamos com metodologia comprovada, análise constante de métricas e ajuste
 
             {/* Strategy Overview */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-lime-400">Visão Geral da Estratégia</h3>
+              <h3 className="text-lg font-semibold text-lime-400 flex items-center gap-2">
+                Visão Geral da Estratégia
+                <span className="text-xs text-lime-400/70 font-normal">(Template preenchido - personalize para o cliente)</span>
+              </h3>
               <div>
                 <Textarea
                   name="strategyOverview"
                   value={formData.strategyOverview}
                   onChange={handleChange}
-                  rows={5}
+                  rows={8}
                   className="bg-zinc-800 border-zinc-700 text-white"
                   placeholder="Explique o posicionamento digital, otimização de perfil, estratégia de conteúdo..."
                 />
@@ -411,7 +416,10 @@ Trabalhamos com metodologia comprovada, análise constante de métricas e ajuste
             {/* Pricing Plans */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-lime-400">Planos de Serviço</h3>
+                <h3 className="text-lg font-semibold text-lime-400 flex items-center gap-2">
+                  Planos de Serviço
+                  <span className="text-xs text-lime-400/70 font-normal">(2 planos padrão - edite preços e funcionalidades)</span>
+                </h3>
                 <Button
                   type="button"
                   onClick={addPlan}
@@ -441,18 +449,24 @@ Trabalhamos com metodologia comprovada, análise constante de métricas e ajuste
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <Input
-                      value={plan.name}
-                      onChange={(e) => handlePlanChange(planIndex, 'name', e.target.value)}
-                      placeholder="Nome do Plano"
-                      className="bg-zinc-900 border-zinc-700 text-white"
-                    />
-                    <Input
-                      value={plan.price}
-                      onChange={(e) => handlePlanChange(planIndex, 'price', e.target.value)}
-                      placeholder="Preço (ex: R$ 2.500)"
-                      className="bg-zinc-900 border-zinc-700 text-white"
-                    />
+                    <div>
+                      <Label className="text-zinc-400 text-xs mb-1">Nome do Plano</Label>
+                      <Input
+                        value={plan.name}
+                        onChange={(e) => handlePlanChange(planIndex, 'name', e.target.value)}
+                        placeholder="Nome do Plano"
+                        className="bg-zinc-900 border-zinc-700 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-lime-400 text-xs mb-1 font-semibold">💰 Preço (Editável)</Label>
+                      <Input
+                        value={plan.price}
+                        onChange={(e) => handlePlanChange(planIndex, 'price', e.target.value)}
+                        placeholder="Preço (ex: R$ 2.500)"
+                        className="bg-zinc-900 border-lime-400/30 text-white font-semibold focus:border-lime-400"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
