@@ -460,15 +460,16 @@ export default function ProposalPage() {
                 <Button
                   onClick={handleWhatsApp}
                   size="lg"
-                  className="bg-lime-400 hover:bg-lime-500 text-black font-bold text-lg px-8 py-6"
+                  variant="outline"
+                  className="border-lime-400 text-lime-400 hover:bg-lime-400/10 font-bold text-lg px-8 py-6"
                 >
                   <MessageCircle className="w-5 h-5 mr-2" />
                   Falar no WhatsApp
                 </Button>
                 <Button
+                  onClick={() => window.location.href = `/proposal/${params.id}/obrigado`}
                   size="lg"
-                  variant="outline"
-                  className="border-lime-400 text-lime-400 hover:bg-lime-400/10 font-bold text-lg px-8 py-6"
+                  className="bg-lime-400 hover:bg-lime-500 text-black font-bold text-lg px-8 py-6 shadow-lg shadow-lime-400/20"
                 >
                   Aceitar Proposta
                   <ArrowRight className="w-5 h-5 ml-2" />
