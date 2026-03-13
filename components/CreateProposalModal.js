@@ -31,16 +31,20 @@ export default function CreateProposalModal({ isOpen, onClose, proposal }) {
       },
     ],
     previewImage: '',
+    mainCreative: '',
+    carouselCreatives: [],
     expectedResults: '',
     customNotes: '',
-    brandName: '',
-    brandDescription: '',
-    contactEmail: '',
-    contactPhone: '',
-    contactInstagram: '',
-    contactWhatsApp: '',
+    brandName: 'Zeri Solutions',
+    brandDescription: 'A Agencia Zeri surgiu com o proposito de otimizar o tempo de empresários e trazer a tona a identidade dos seus negócios em nichos diversos!',
+    contactEmail: 'zeriagencia@gmail.com',
+    contactPhone: '84991151503',
+    contactInstagram: '@zeriagencia',
+    contactWhatsApp: '5584991151503',
   });
   const [saving, setSaving] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiFieldType, setAiFieldType] = useState(null);
 
   useEffect(() => {
     if (proposal) {
@@ -133,6 +137,68 @@ export default function CreateProposalModal({ isOpen, onClose, proposal }) {
     maxFiles: 1,
     onDrop: (files) => handleImageUpload(files, 'previewImage'),
   });
+
+  const mainCreativeDropzone = useDropzone({
+    accept: { 'image/*': [] },
+    maxFiles: 1,
+    onDrop: (files) => handleImageUpload(files, 'mainCreative'),
+  });
+
+  const carouselCreativesDropzone = useDropzone({
+    accept: { 'image/*': [] },
+    multiple: true,
+    onDrop: (acceptedFiles) => {
+      acceptedFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setFormData((prev) => ({
+            ...prev,
+            carouselCreatives: [...(prev.carouselCreatives || []), e.target.result],
+          }));
+        };
+        reader.readAsDataURL(file);
+      });
+    },
+  });
+
+  const removeCarouselCreative = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      carouselCreatives: prev.carouselCreatives.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleAIHelp = async (fieldType) => {
+    setAiGenerating(true);
+    setAiFieldType(fieldType);
+    
+    try {
+      const prompt = fieldType === 'expectedResults'
+        ? `Cliente: ${formData.companyName || 'empresa'}\nNicho: Marketing Digital\nGere resultados esperados profissionais e realistas para uma proposta de gestão de redes sociais (3-5 pontos)`
+        : `Cliente: ${formData.companyName || 'empresa'}\nGere notas personalizadas profissionais para uma proposta comercial de marketing digital (2-3 parágrafos curtos)`;
+
+      const response = await fetch('/api/ai-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, fieldType }),
+      });
+
+      const data = await response.json();
+      
+      if (data.text) {
+        setFormData((prev) => ({
+          ...prev,
+          [fieldType]: data.text,
+        }));
+      }
+    } catch (error) {
+      console.error('Error generating AI text:', error);
+      alert('Erro ao gerar texto com IA. Tente novamente.');
+    } finally {
+      setAiGenerating(false);
+      setAiFieldType(null);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
