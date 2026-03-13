@@ -10,23 +10,47 @@ import { Card } from '@/components/ui/card';
 import { useDropzone } from 'react-dropzone';
 
 export default function CreateProposalModal({ isOpen, onClose, proposal }) {
-  const [formData, setFormData] = useState({
+  // Template padrão para nova proposta
+  const defaultTemplate = {
     clientName: '',
     companyName: '',
     clientLogo: '',
-    title: '',
-    description: '',
+    title: 'Proposta de Gestão de Conteúdo para Mídias Digitais',
+    description: 'Estratégia completa de posicionamento digital e crescimento nas redes sociais',
     coverImage: '',
-    strategyOverview: '',
+    strategyOverview: `Nossa estratégia foi desenvolvida para maximizar sua presença digital e criar conexão genuína com seu público.
+
+Focamos em três pilares fundamentais:
+
+• Posicionamento Digital: Construir uma identidade forte e reconhecível no ambiente digital
+• Otimização de Perfil: Garantir que seu perfil comunique valor desde o primeiro contato
+• Estratégia de Conteúdo: Criar conteúdos que engajam, educam e convertem
+• Crescimento da Marca: Aumentar autoridade e reconhecimento no seu nicho
+
+Trabalhamos com metodologia comprovada, análise constante de métricas e ajustes estratégicos para garantir os melhores resultados.`,
     plans: [
       {
-        name: 'Plano Básico',
+        name: 'Plano Essencial',
         price: 'R$ 2.500',
         features: [
           'Planejamento estratégico mensal',
           'Gestão do Instagram',
           '10 conteúdos mensais',
           'Até 4 vídeos editados',
+          'Direcionamento de conteúdo para stories',
+          'Acompanhamento de engajamento',
+          'Reunião estratégica mensal',
+        ],
+      },
+      {
+        name: 'Plano Profissional',
+        price: 'R$ 3.000',
+        features: [
+          'Tudo do plano Essencial',
+          '12 conteúdos mensais',
+          'Até 6 vídeos editados',
+          'Desenvolvimento e posicionamento digital',
+          'Estratégia e humanização da marca',
         ],
       },
     ],
@@ -41,7 +65,9 @@ export default function CreateProposalModal({ isOpen, onClose, proposal }) {
     contactPhone: '84991151503',
     contactInstagram: '@zeriagencia',
     contactWhatsApp: '5584991151503',
-  });
+  };
+
+  const [formData, setFormData] = useState(defaultTemplate);
   const [saving, setSaving] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
   const [aiFieldType, setAiFieldType] = useState(null);
@@ -49,8 +75,11 @@ export default function CreateProposalModal({ isOpen, onClose, proposal }) {
   useEffect(() => {
     if (proposal) {
       setFormData(proposal);
+    } else {
+      // Reset para o template padrão quando criar nova proposta
+      setFormData(defaultTemplate);
     }
-  }, [proposal]);
+  }, [proposal, isOpen]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
