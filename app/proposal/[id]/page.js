@@ -283,9 +283,9 @@ export default function ProposalPage() {
                 {/* Main Creative + Carousel Layout */}
                 <div className="flex flex-col lg:flex-row gap-6 items-start">
                   
-                  {/* Main Creative - Larger (60%) */}
+                  {/* Main Creative - Slightly Larger (52%) */}
                   {proposal.mainCreative && (
-                    <div className="w-full lg:w-[58%] flex-shrink-0">
+                    <div className="w-full lg:w-[52%] flex-shrink-0">
                       <div className="sticky top-24">
                         <div className="relative aspect-[4/5] rounded-xl overflow-hidden border-4 border-lime-400 shadow-2xl shadow-lime-400/20">
                           <img
@@ -303,9 +303,9 @@ export default function ProposalPage() {
                     </div>
                   )}
 
-                  {/* Carousel - Smaller (40%) */}
+                  {/* Carousel - Similar Size (48%) */}
                   {proposal.carouselCreatives && proposal.carouselCreatives.length > 0 && (
-                    <div className="w-full lg:w-[42%] flex-1">
+                    <div className="w-full lg:w-[48%] flex-1">
                       <div className="mb-6 text-center lg:text-left">
                         <h3 className="text-lg font-semibold text-white mb-1">
                           Exemplos de Trabalhos
