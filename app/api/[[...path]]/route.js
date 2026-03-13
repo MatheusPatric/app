@@ -1,104 +1,211 @@
-import { MongoClient } from 'mongodb'
-import { v4 as uuidv4 } from 'uuid'
-import { NextResponse } from 'next/server'
+import { MongoClient } from 'mongodb';
+import { NextResponse } from 'next/server';
+import { v4 as uuidv4 } from 'uuid';
 
-// MongoDB connection
-let client
-let db
+const uri = process.env.MONGO_URL;
+const dbName = process.env.DB_NAME || 'proposal_generator';
 
-async function connectToMongo() {
-  if (!client) {
-    client = new MongoClient(process.env.MONGO_URL)
-    await client.connect()
-    db = client.db(process.env.DB_NAME)
+let cachedClient = null;
+let cachedDb = null;
+
+async function connectToDatabase() {
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
   }
-  return db
+
+  const client = await MongoClient.connect(uri, {
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 5000,
+  });
+
+  const db = client.db(dbName);
+  cachedClient = client;
+  cachedDb = db;
+
+  return { client, db };
 }
 
-// Helper function to handle CORS
-function handleCORS(response) {
-  response.headers.set('Access-Control-Allow-Origin', process.env.CORS_ORIGINS || '*')
-  response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-  response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-  response.headers.set('Access-Control-Allow-Credentials', 'true')
-  return response
+// Helper to handle CORS
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
 }
 
-// OPTIONS handler for CORS
 export async function OPTIONS() {
-  return handleCORS(new NextResponse(null, { status: 200 }))
+  return NextResponse.json({}, { headers: corsHeaders() });
 }
 
-// Route handler function
-async function handleRoute(request, { params }) {
-  const { path = [] } = params
-  const route = `/${path.join('/')}`
-  const method = request.method
-
+export async function GET(request) {
   try {
-    const db = await connectToMongo()
+    const { db } = await connectToDatabase();
+    const { pathname, searchParams } = new URL(request.url);
+    const path = pathname.replace('/api/', '');
 
-    // Root endpoint - GET /api/root (since /api/ is not accessible with catch-all)
-    if (route === '/root' && method === 'GET') {
-      return handleCORS(NextResponse.json({ message: "Hello World" }))
-    }
-    // Root endpoint - GET /api/root (since /api/ is not accessible with catch-all)
-    if (route === '/' && method === 'GET') {
-      return handleCORS(NextResponse.json({ message: "Hello World" }))
-    }
-
-    // Status endpoints - POST /api/status
-    if (route === '/status' && method === 'POST') {
-      const body = await request.json()
-      
-      if (!body.client_name) {
-        return handleCORS(NextResponse.json(
-          { error: "client_name is required" }, 
-          { status: 400 }
-        ))
-      }
-
-      const statusObj = {
-        id: uuidv4(),
-        client_name: body.client_name,
-        timestamp: new Date()
-      }
-
-      await db.collection('status_checks').insertOne(statusObj)
-      return handleCORS(NextResponse.json(statusObj))
-    }
-
-    // Status endpoints - GET /api/status
-    if (route === '/status' && method === 'GET') {
-      const statusChecks = await db.collection('status_checks')
+    // Get all proposals
+    if (path === 'proposals') {
+      const proposals = await db
+        .collection('proposals')
         .find({})
-        .limit(1000)
-        .toArray()
-
-      // Remove MongoDB's _id field from response
-      const cleanedStatusChecks = statusChecks.map(({ _id, ...rest }) => rest)
-      
-      return handleCORS(NextResponse.json(cleanedStatusChecks))
+        .sort({ createdAt: -1 })
+        .toArray();
+      return NextResponse.json({ proposals }, { headers: corsHeaders() });
     }
 
-    // Route not found
-    return handleCORS(NextResponse.json(
-      { error: `Route ${route} not found` }, 
-      { status: 404 }
-    ))
+    // Get single proposal by ID
+    if (path.startsWith('proposals/')) {
+      const id = path.split('/')[1];
+      const proposal = await db.collection('proposals').findOne({ id });
+      
+      if (!proposal) {
+        return NextResponse.json(
+          { error: 'Proposal not found' },
+          { status: 404, headers: corsHeaders() }
+        );
+      }
+      
+      return NextResponse.json({ proposal }, { headers: corsHeaders() });
+    }
 
+    return NextResponse.json(
+      { error: 'Route not found' },
+      { status: 404, headers: corsHeaders() }
+    );
   } catch (error) {
-    console.error('API Error:', error)
-    return handleCORS(NextResponse.json(
-      { error: "Internal server error" }, 
-      { status: 500 }
-    ))
+    console.error('GET Error:', error);
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500, headers: corsHeaders() }
+    );
   }
 }
 
-// Export all HTTP methods
-export const GET = handleRoute
-export const POST = handleRoute
-export const PUT = handleRoute
-export const DELETE = handleRoute
-export const PATCH = handleRoute
+export async function POST(request) {
+  try {
+    const { db } = await connectToDatabase();
+    const { pathname } = new URL(request.url);
+    const path = pathname.replace('/api/', '');
+    const body = await request.json();
+
+    // Create new proposal
+    if (path === 'proposals') {
+      const proposal = {
+        id: uuidv4(),
+        ...body,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await db.collection('proposals').insertOne(proposal);
+      return NextResponse.json(
+        { proposal },
+        { status: 201, headers: corsHeaders() }
+      );
+    }
+
+    // Upload image
+    if (path === 'upload-image') {
+      // In this case, body contains base64 image data
+      return NextResponse.json(
+        { imageUrl: body.imageData },
+        { headers: corsHeaders() }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Route not found' },
+      { status: 404, headers: corsHeaders() }
+    );
+  } catch (error) {
+    console.error('POST Error:', error);
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500, headers: corsHeaders() }
+    );
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const { db } = await connectToDatabase();
+    const { pathname } = new URL(request.url);
+    const path = pathname.replace('/api/', '');
+    const body = await request.json();
+
+    // Update proposal
+    if (path.startsWith('proposals/')) {
+      const id = path.split('/')[1];
+      const updateData = {
+        ...body,
+        updatedAt: new Date().toISOString(),
+      };
+
+      delete updateData.id;
+      delete updateData.createdAt;
+
+      const result = await db
+        .collection('proposals')
+        .updateOne({ id }, { $set: updateData });
+
+      if (result.matchedCount === 0) {
+        return NextResponse.json(
+          { error: 'Proposal not found' },
+          { status: 404, headers: corsHeaders() }
+        );
+      }
+
+      const proposal = await db.collection('proposals').findOne({ id });
+      return NextResponse.json({ proposal }, { headers: corsHeaders() });
+    }
+
+    return NextResponse.json(
+      { error: 'Route not found' },
+      { status: 404, headers: corsHeaders() }
+    );
+  } catch (error) {
+    console.error('PUT Error:', error);
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500, headers: corsHeaders() }
+    );
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const { db } = await connectToDatabase();
+    const { pathname } = new URL(request.url);
+    const path = pathname.replace('/api/', '');
+
+    // Delete proposal
+    if (path.startsWith('proposals/')) {
+      const id = path.split('/')[1];
+      const result = await db.collection('proposals').deleteOne({ id });
+
+      if (result.deletedCount === 0) {
+        return NextResponse.json(
+          { error: 'Proposal not found' },
+          { status: 404, headers: corsHeaders() }
+        );
+      }
+
+      return NextResponse.json(
+        { message: 'Proposal deleted successfully' },
+        { headers: corsHeaders() }
+      );
+    }
+
+    return NextResponse.json(
+      { error: 'Route not found' },
+      { status: 404, headers: corsHeaders() }
+    );
+  } catch (error) {
+    console.error('DELETE Error:', error);
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500, headers: corsHeaders() }
+    );
+  }
+}

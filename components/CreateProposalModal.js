@@ -1,0 +1,525 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { X, Plus, Trash2, Upload } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card } from '@/components/ui/card';
+import { useDropzone } from 'react-dropzone';
+
+export default function CreateProposalModal({ isOpen, onClose, proposal }) {
+  const [formData, setFormData] = useState({
+    clientName: '',
+    companyName: '',
+    clientLogo: '',
+    title: '',
+    description: '',
+    coverImage: '',
+    strategyOverview: '',
+    plans: [
+      {
+        name: 'Plano Básico',
+        price: 'R$ 2.500',
+        features: [
+          'Planejamento estratégico mensal',
+          'Gestão do Instagram',
+          '10 conteúdos mensais',
+          'Até 4 vídeos editados',
+        ],
+      },
+    ],
+    previewImage: '',
+    expectedResults: '',
+    customNotes: '',
+    brandName: '',
+    brandDescription: '',
+    contactEmail: '',
+    contactPhone: '',
+    contactInstagram: '',
+    contactWhatsApp: '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (proposal) {
+      setFormData(proposal);
+    }
+  }, [proposal]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePlanChange = (index, field, value) => {
+    const newPlans = [...formData.plans];
+    newPlans[index] = { ...newPlans[index], [field]: value };
+    setFormData((prev) => ({ ...prev, plans: newPlans }));
+  };
+
+  const handlePlanFeatureChange = (planIndex, featureIndex, value) => {
+    const newPlans = [...formData.plans];
+    const newFeatures = [...(newPlans[planIndex].features || [])];
+    newFeatures[featureIndex] = value;
+    newPlans[planIndex] = { ...newPlans[planIndex], features: newFeatures };
+    setFormData((prev) => ({ ...prev, plans: newPlans }));
+  };
+
+  const addPlan = () => {
+    setFormData((prev) => ({
+      ...prev,
+      plans: [
+        ...prev.plans,
+        {
+          name: 'Novo Plano',
+          price: 'R$ 0',
+          features: ['Feature 1'],
+        },
+      ],
+    }));
+  };
+
+  const removePlan = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      plans: prev.plans.filter((_, i) => i !== index),
+    }));
+  };
+
+  const addFeature = (planIndex) => {
+    const newPlans = [...formData.plans];
+    newPlans[planIndex].features = [
+      ...(newPlans[planIndex].features || []),
+      'Nova funcionalidade',
+    ];
+    setFormData((prev) => ({ ...prev, plans: newPlans }));
+  };
+
+  const removeFeature = (planIndex, featureIndex) => {
+    const newPlans = [...formData.plans];
+    newPlans[planIndex].features = newPlans[planIndex].features.filter(
+      (_, i) => i !== featureIndex
+    );
+    setFormData((prev) => ({ ...prev, plans: newPlans }));
+  };
+
+  const handleImageUpload = (acceptedFiles, field) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFormData((prev) => ({ ...prev, [field]: e.target.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const logoDropzone = useDropzone({
+    accept: { 'image/*': [] },
+    maxFiles: 1,
+    onDrop: (files) => handleImageUpload(files, 'clientLogo'),
+  });
+
+  const coverDropzone = useDropzone({
+    accept: { 'image/*': [] },
+    maxFiles: 1,
+    onDrop: (files) => handleImageUpload(files, 'coverImage'),
+  });
+
+  const previewDropzone = useDropzone({
+    accept: { 'image/*': [] },
+    maxFiles: 1,
+    onDrop: (files) => handleImageUpload(files, 'previewImage'),
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const url = proposal
+        ? `/api/proposals/${proposal.id}`
+        : '/api/proposals';
+      const method = proposal ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        onClose();
+      } else {
+        alert('Erro ao salvar proposta');
+      }
+    } catch (error) {
+      console.error('Error saving proposal:', error);
+      alert('Erro ao salvar proposta');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 overflow-y-auto">
+      <div className="min-h-screen px-4 py-8">
+        <div className="max-w-4xl mx-auto bg-zinc-900 rounded-lg shadow-2xl border border-zinc-800">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-zinc-800">
+            <h2 className="text-2xl font-bold text-white">
+              {proposal ? 'Editar Proposta' : 'Nova Proposta'}
+            </h2>
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="sm"
+              className="text-zinc-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Client Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-lime-400">Informações do Cliente</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="clientName" className="text-zinc-300">
+                    Nome do Cliente
+                  </Label>
+                  <Input
+                    id="clientName"
+                    name="clientName"
+                    value={formData.clientName}
+                    onChange={handleChange}
+                    required
+                    className="bg-zinc-800 border-zinc-700 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="companyName" className="text-zinc-300">
+                    Nome da Empresa
+                  </Label>
+                  <Input
+                    id="companyName"
+                    name="companyName"
+                    value={formData.companyName}
+                    onChange={handleChange}
+                    required
+                    className="bg-zinc-800 border-zinc-700 text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Logo Upload */}
+              <div>
+                <Label className="text-zinc-300 mb-2 block">Logo do Cliente</Label>
+                <div
+                  {...logoDropzone.getRootProps()}
+                  className="border-2 border-dashed border-zinc-700 rounded-lg p-8 text-center cursor-pointer hover:border-lime-400 transition-colors"
+                >
+                  <input {...logoDropzone.getInputProps()} />
+                  {formData.clientLogo ? (
+                    <img
+                      src={formData.clientLogo}
+                      alt="Logo"
+                      className="w-32 h-32 object-contain mx-auto"
+                    />
+                  ) : (
+                    <div className="text-zinc-400">
+                      <Upload className="w-8 h-8 mx-auto mb-2" />
+                      <p>Clique ou arraste a logo aqui</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Proposal Details */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-lime-400">Detalhes da Proposta</h3>
+              <div>
+                <Label htmlFor="title" className="text-zinc-300">
+                  Título da Proposta
+                </Label>
+                <Input
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  required
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                  placeholder="Ex: Proposta de Gestão de Conteúdo para Mídias Digitais"
+                />
+              </div>
+              <div>
+                <Label htmlFor="description" className="text-zinc-300">
+                  Descrição
+                </Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  rows={3}
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                  placeholder="Breve descrição sobre estratégia e crescimento"
+                />
+              </div>
+
+              {/* Cover Image */}
+              <div>
+                <Label className="text-zinc-300 mb-2 block">Imagem de Capa (Opcional)</Label>
+                <div
+                  {...coverDropzone.getRootProps()}
+                  className="border-2 border-dashed border-zinc-700 rounded-lg p-8 text-center cursor-pointer hover:border-lime-400 transition-colors"
+                >
+                  <input {...coverDropzone.getInputProps()} />
+                  {formData.coverImage ? (
+                    <img
+                      src={formData.coverImage}
+                      alt="Cover"
+                      className="max-h-48 mx-auto"
+                    />
+                  ) : (
+                    <div className="text-zinc-400">
+                      <Upload className="w-8 h-8 mx-auto mb-2" />
+                      <p>Clique ou arraste a imagem de capa aqui</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Strategy Overview */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-lime-400">Visão Geral da Estratégia</h3>
+              <div>
+                <Textarea
+                  name="strategyOverview"
+                  value={formData.strategyOverview}
+                  onChange={handleChange}
+                  rows={5}
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                  placeholder="Explique o posicionamento digital, otimização de perfil, estratégia de conteúdo..."
+                />
+              </div>
+            </div>
+
+            {/* Pricing Plans */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-lime-400">Planos de Serviço</h3>
+                <Button
+                  type="button"
+                  onClick={addPlan}
+                  size="sm"
+                  className="bg-lime-400/20 hover:bg-lime-400/30 text-lime-400 border border-lime-400/50"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Plano
+                </Button>
+              </div>
+
+              {formData.plans.map((plan, planIndex) => (
+                <Card key={planIndex} className="bg-zinc-800/50 border-zinc-700 p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-white font-semibold">Plano {planIndex + 1}</h4>
+                    {formData.plans.length > 1 && (
+                      <Button
+                        type="button"
+                        onClick={() => removePlan(planIndex)}
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <Input
+                      value={plan.name}
+                      onChange={(e) => handlePlanChange(planIndex, 'name', e.target.value)}
+                      placeholder="Nome do Plano"
+                      className="bg-zinc-900 border-zinc-700 text-white"
+                    />
+                    <Input
+                      value={plan.price}
+                      onChange={(e) => handlePlanChange(planIndex, 'price', e.target.value)}
+                      placeholder="Preço (ex: R$ 2.500)"
+                      className="bg-zinc-900 border-zinc-700 text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-zinc-300">Funcionalidades</Label>
+                      <Button
+                        type="button"
+                        onClick={() => addFeature(planIndex)}
+                        size="sm"
+                        variant="ghost"
+                        className="text-lime-400 hover:text-lime-300 text-xs"
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Adicionar
+                      </Button>
+                    </div>
+                    {plan.features?.map((feature, featureIndex) => (
+                      <div key={featureIndex} className="flex gap-2">
+                        <Input
+                          value={feature}
+                          onChange={(e) =>
+                            handlePlanFeatureChange(planIndex, featureIndex, e.target.value)
+                          }
+                          className="bg-zinc-900 border-zinc-700 text-white flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={() => removeFeature(planIndex, featureIndex)}
+                          size="sm"
+                          variant="ghost"
+                          className="text-red-400"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            {/* Preview Image */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-lime-400">Prévia Visual (Opcional)</h3>
+              <div
+                {...previewDropzone.getRootProps()}
+                className="border-2 border-dashed border-zinc-700 rounded-lg p-8 text-center cursor-pointer hover:border-lime-400 transition-colors"
+              >
+                <input {...previewDropzone.getInputProps()} />
+                {formData.previewImage ? (
+                  <img
+                    src={formData.previewImage}
+                    alt="Preview"
+                    className="max-h-48 mx-auto"
+                  />
+                ) : (
+                  <div className="text-zinc-400">
+                    <Upload className="w-8 h-8 mx-auto mb-2" />
+                    <p>Adicione mockups ou exemplos criativos</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Expected Results */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-lime-400">Resultados Esperados (Opcional)</h3>
+              <Textarea
+                name="expectedResults"
+                value={formData.expectedResults}
+                onChange={handleChange}
+                rows={4}
+                className="bg-zinc-800 border-zinc-700 text-white"
+                placeholder="Liste as expectativas de crescimento e resultados"
+              />
+            </div>
+
+            {/* Custom Notes */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-lime-400">Notas Personalizadas (Opcional)</h3>
+              <Textarea
+                name="customNotes"
+                value={formData.customNotes}
+                onChange={handleChange}
+                rows={3}
+                className="bg-zinc-800 border-zinc-700 text-white"
+                placeholder="Adicione observações específicas para este cliente"
+              />
+            </div>
+
+            {/* Footer Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-lime-400">Informações de Contato</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  name="brandName"
+                  value={formData.brandName}
+                  onChange={handleChange}
+                  placeholder="Nome da sua marca"
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+                <Input
+                  name="contactEmail"
+                  value={formData.contactEmail}
+                  onChange={handleChange}
+                  placeholder="Email"
+                  type="email"
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+                <Input
+                  name="contactPhone"
+                  value={formData.contactPhone}
+                  onChange={handleChange}
+                  placeholder="Telefone"
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+                <Input
+                  name="contactInstagram"
+                  value={formData.contactInstagram}
+                  onChange={handleChange}
+                  placeholder="@instagram"
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+                <Input
+                  name="contactWhatsApp"
+                  value={formData.contactWhatsApp}
+                  onChange={handleChange}
+                  placeholder="WhatsApp (com DDD)"
+                  className="bg-zinc-800 border-zinc-700 text-white"
+                />
+              </div>
+              <Textarea
+                name="brandDescription"
+                value={formData.brandDescription}
+                onChange={handleChange}
+                rows={2}
+                placeholder="Breve descrição da sua marca"
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-4 pt-4">
+              <Button
+                type="button"
+                onClick={onClose}
+                variant="outline"
+                className="flex-1 border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving}
+                className="flex-1 bg-lime-400 hover:bg-lime-500 text-black font-semibold"
+              >
+                {saving ? 'Salvando...' : proposal ? 'Atualizar' : 'Criar Proposta'}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
