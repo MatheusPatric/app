@@ -1,324 +1,342 @@
 #!/usr/bin/env python3
-"""
-Backend API Testing for Proposal Generator
-Tests all CRUD operations for the proposals API endpoints
-"""
 
 import requests
 import json
+import base64
+from io import BytesIO
+from PIL import Image
 import sys
-import os
-from datetime import datetime
 
-# Get base URL from environment or use default
-BASE_URL = os.getenv('NEXT_PUBLIC_BASE_URL', 'https://client-deck.preview.emergentagent.com')
-API_BASE = f"{BASE_URL}/api"
+# Configuration
+BASE_URL = "https://client-deck.preview.emergentagent.com/api"
 
-# Test data as specified in the review request
-TEST_PROPOSAL = {
-    "clientName": "João Silva",
-    "companyName": "Tech Solutions LTDA", 
-    "title": "Proposta de Gestão de Conteúdo para Mídias Digitais",
-    "description": "Estratégia completa para crescimento nas redes sociais",
-    "strategyOverview": "Nossa estratégia foca em posicionamento digital e humanização da marca",
-    "plans": [
-        {
-            "name": "Plano Básico",
-            "price": "R$ 2.500",
-            "features": [
-                "Planejamento estratégico mensal",
-                "Gestão do Instagram", 
-                "10 conteúdos mensais"
-            ]
-        }
-    ],
-    "brandName": "Agência Digital",
-    "contactEmail": "contato@agencia.com",
-    "contactWhatsApp": "11999999999"
-}
+def create_test_image_base64():
+    """Create a small test image and return as base64"""
+    # Create a small 10x10 red image
+    img = Image.new('RGB', (10, 10), color='red')
+    buffer = BytesIO()
+    img.save(buffer, format='PNG')
+    img_data = buffer.getvalue()
+    return f"data:image/png;base64,{base64.b64encode(img_data).decode()}"
 
-def print_test_result(test_name, success, message="", response_data=None):
-    """Print formatted test results"""
-    status = "✅ PASS" if success else "❌ FAIL"
-    print(f"{status} {test_name}")
-    if message:
-        print(f"   {message}")
-    if response_data and not success:
-        print(f"   Response: {response_data}")
-    print()
-
-def test_get_all_proposals_empty():
-    """Test GET /api/proposals - should return empty array initially"""
+def test_ai_generate_endpoint():
+    """Test the AI generation endpoint with different field types"""
+    print("\n=== Testing AI Generation Endpoint ===")
+    
+    # Test expectedResults generation
     try:
-        print("🧪 Testing GET /api/proposals (empty state)...")
-        response = requests.get(f"{API_BASE}/proposals", timeout=10)
+        print("\n1. Testing AI generation for expectedResults...")
+        response = requests.post(f"{BASE_URL}/ai-generate", 
+                               json={"fieldType": "expectedResults", "prompt": "Generate expected results"})
         
         if response.status_code == 200:
             data = response.json()
-            if 'proposals' in data and isinstance(data['proposals'], list):
-                print_test_result("GET /api/proposals (empty)", True, 
-                                f"Status: {response.status_code}, Found {len(data['proposals'])} proposals")
-                return True
+            if 'text' in data and data['text']:
+                print("✅ PASS - expectedResults generation successful")
+                print(f"Generated text preview: {data['text'][:100]}...")
             else:
-                print_test_result("GET /api/proposals (empty)", False, 
-                                "Response missing 'proposals' array", data)
+                print("❌ FAIL - No text returned in response")
                 return False
         else:
-            print_test_result("GET /api/proposals (empty)", False, 
-                            f"Expected 200, got {response.status_code}", response.text)
+            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
             return False
             
     except Exception as e:
-        print_test_result("GET /api/proposals (empty)", False, f"Exception: {str(e)}")
+        print(f"❌ FAIL - Exception: {str(e)}")
         return False
-
-def test_create_proposal():
-    """Test POST /api/proposals - create a new proposal"""
+    
+    # Test customNotes generation
     try:
-        print("🧪 Testing POST /api/proposals...")
-        response = requests.post(
-            f"{API_BASE}/proposals",
-            json=TEST_PROPOSAL,
-            headers={'Content-Type': 'application/json'},
-            timeout=10
-        )
+        print("\n2. Testing AI generation for customNotes...")
+        response = requests.post(f"{BASE_URL}/ai-generate", 
+                               json={"fieldType": "customNotes", "prompt": "Generate custom notes"})
+        
+        if response.status_code == 200:
+            data = response.json()
+            if 'text' in data and data['text']:
+                print("✅ PASS - customNotes generation successful")
+                print(f"Generated text preview: {data['text'][:100]}...")
+            else:
+                print("❌ FAIL - No text returned in response")
+                return False
+        else:
+            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ FAIL - Exception: {str(e)}")
+        return False
+    
+    return True
+
+def test_create_proposal_with_new_fields():
+    """Test creating a proposal with all new fields including creatives and AI-generated content"""
+    print("\n=== Testing Create Proposal with New Fields ===")
+    
+    try:
+        # First generate AI content
+        print("\n1. Generating AI content for proposal...")
+        
+        # Generate expectedResults
+        expected_results_response = requests.post(f"{BASE_URL}/ai-generate", 
+                                                json={"fieldType": "expectedResults"})
+        if expected_results_response.status_code != 200:
+            print(f"❌ FAIL - Could not generate expectedResults: {expected_results_response.text}")
+            return None
+            
+        expected_results = expected_results_response.json()['text']
+        
+        # Generate customNotes
+        custom_notes_response = requests.post(f"{BASE_URL}/ai-generate", 
+                                            json={"fieldType": "customNotes"})
+        if custom_notes_response.status_code != 200:
+            print(f"❌ FAIL - Could not generate customNotes: {custom_notes_response.text}")
+            return None
+            
+        custom_notes = custom_notes_response.json()['text']
+        
+        print("✅ AI content generated successfully")
+        
+        # Create test images
+        main_creative = create_test_image_base64()
+        carousel_creatives = [
+            create_test_image_base64(),
+            create_test_image_base64(),
+            create_test_image_base64()
+        ]
+        
+        # Create proposal with all new fields
+        print("\n2. Creating proposal with new fields...")
+        proposal_data = {
+            "clientName": "João Silva",
+            "companyName": "Tech Solutions LTDA",
+            "title": "Proposta de Gestão de Conteúdo",
+            "mainCreative": main_creative,
+            "carouselCreatives": carousel_creatives,
+            "expectedResults": expected_results,
+            "customNotes": custom_notes,
+            # Pre-filled Zeri Solutions data
+            "brandName": "Zeri Solutions",
+            "contactEmail": "zeriagencia@gmail.com",
+            "contactWhatsApp": "5584991151503"
+        }
+        
+        response = requests.post(f"{BASE_URL}/proposals", json=proposal_data)
         
         if response.status_code == 201:
             data = response.json()
-            if 'proposal' in data:
-                proposal = data['proposal']
-                # Check if required fields are present
-                required_fields = ['id', 'createdAt', 'updatedAt']
-                missing_fields = [field for field in required_fields if field not in proposal]
-                
-                if not missing_fields:
-                    print_test_result("POST /api/proposals", True, 
-                                    f"Status: {response.status_code}, ID: {proposal['id']}")
-                    return proposal['id']  # Return the ID for subsequent tests
-                else:
-                    print_test_result("POST /api/proposals", False, 
-                                    f"Missing fields: {missing_fields}", data)
-                    return None
+            proposal = data['proposal']
+            
+            # Verify all fields are present
+            required_fields = ['id', 'clientName', 'companyName', 'title', 'mainCreative', 
+                             'carouselCreatives', 'expectedResults', 'customNotes', 
+                             'brandName', 'contactEmail', 'contactWhatsApp', 'createdAt', 'updatedAt']
+            
+            missing_fields = [field for field in required_fields if field not in proposal]
+            
+            if not missing_fields:
+                print("✅ PASS - Proposal created with all new fields")
+                print(f"Proposal ID: {proposal['id']}")
+                print(f"Main creative length: {len(proposal['mainCreative'])} chars")
+                print(f"Carousel creatives count: {len(proposal['carouselCreatives'])}")
+                print(f"Expected results length: {len(proposal['expectedResults'])} chars")
+                print(f"Custom notes length: {len(proposal['customNotes'])} chars")
+                print(f"Brand name: {proposal['brandName']}")
+                return proposal['id']
             else:
-                print_test_result("POST /api/proposals", False, 
-                                "Response missing 'proposal' object", data)
+                print(f"❌ FAIL - Missing fields: {missing_fields}")
                 return None
         else:
-            print_test_result("POST /api/proposals", False, 
-                            f"Expected 201, got {response.status_code}", response.text)
+            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
             return None
             
     except Exception as e:
-        print_test_result("POST /api/proposals", False, f"Exception: {str(e)}")
+        print(f"❌ FAIL - Exception: {str(e)}")
         return None
 
-def test_get_single_proposal(proposal_id):
-    """Test GET /api/proposals/{id} - get single proposal"""
+def test_retrieve_proposal_with_new_fields(proposal_id):
+    """Test retrieving a proposal and verify all new fields are present"""
+    print("\n=== Testing Retrieve Proposal with New Fields ===")
+    
     try:
-        print(f"🧪 Testing GET /api/proposals/{proposal_id}...")
-        response = requests.get(f"{API_BASE}/proposals/{proposal_id}", timeout=10)
+        print(f"\n1. Retrieving proposal {proposal_id}...")
+        response = requests.get(f"{BASE_URL}/proposals/{proposal_id}")
         
         if response.status_code == 200:
             data = response.json()
-            if 'proposal' in data:
-                proposal = data['proposal']
-                if proposal['id'] == proposal_id:
-                    print_test_result("GET /api/proposals/{id}", True, 
-                                    f"Status: {response.status_code}, Retrieved proposal with ID: {proposal_id}")
-                    return True
-                else:
-                    print_test_result("GET /api/proposals/{id}", False, 
-                                    f"ID mismatch: expected {proposal_id}, got {proposal['id']}")
-                    return False
-            else:
-                print_test_result("GET /api/proposals/{id}", False, 
-                                "Response missing 'proposal' object", data)
-                return False
-        else:
-            print_test_result("GET /api/proposals/{id}", False, 
-                            f"Expected 200, got {response.status_code}", response.text)
-            return False
+            proposal = data['proposal']
             
-    except Exception as e:
-        print_test_result("GET /api/proposals/{id}", False, f"Exception: {str(e)}")
-        return False
-
-def test_get_nonexistent_proposal():
-    """Test GET /api/proposals/{id} - should return 404 for non-existent ID"""
-    try:
-        fake_id = "nonexistent-id-12345"
-        print(f"🧪 Testing GET /api/proposals/{fake_id} (404 test)...")
-        response = requests.get(f"{API_BASE}/proposals/{fake_id}", timeout=10)
-        
-        if response.status_code == 404:
-            print_test_result("GET /api/proposals/{id} (404)", True, 
-                            f"Status: {response.status_code} - Correctly returned 404 for non-existent ID")
-            return True
-        else:
-            print_test_result("GET /api/proposals/{id} (404)", False, 
-                            f"Expected 404, got {response.status_code}", response.text)
-            return False
-            
-    except Exception as e:
-        print_test_result("GET /api/proposals/{id} (404)", False, f"Exception: {str(e)}")
-        return False
-
-def test_update_proposal(proposal_id):
-    """Test PUT /api/proposals/{id} - update proposal"""
-    try:
-        print(f"🧪 Testing PUT /api/proposals/{proposal_id}...")
-        
-        # Updated data
-        updated_data = {
-            **TEST_PROPOSAL,
-            "title": "Updated Proposal Title",
-            "description": "Updated description for the proposal",
-            "plans": [
-                {
-                    "name": "Plano Premium",
-                    "price": "R$ 3.500",
-                    "features": [
-                        "Planejamento estratégico mensal",
-                        "Gestão do Instagram e Facebook",
-                        "15 conteúdos mensais",
-                        "Relatórios mensais"
-                    ]
-                }
+            # Verify all new fields are properly stored and retrieved
+            checks = [
+                ('mainCreative', 'data:image/png;base64,'),
+                ('carouselCreatives', list),
+                ('expectedResults', str),
+                ('customNotes', str),
+                ('brandName', 'Zeri Solutions'),
+                ('contactEmail', 'zeriagencia@gmail.com'),
+                ('contactWhatsApp', '5584991151503')
             ]
-        }
-        
-        response = requests.put(
-            f"{API_BASE}/proposals/{proposal_id}",
-            json=updated_data,
-            headers={'Content-Type': 'application/json'},
-            timeout=10
-        )
-        
-        if response.status_code == 200:
-            data = response.json()
-            if 'proposal' in data:
-                proposal = data['proposal']
-                if (proposal['id'] == proposal_id and 
-                    proposal['title'] == updated_data['title'] and
-                    'createdAt' in proposal and 'updatedAt' in proposal):
-                    print_test_result("PUT /api/proposals/{id}", True, 
-                                    f"Status: {response.status_code}, Updated proposal successfully")
-                    return True
-                else:
-                    print_test_result("PUT /api/proposals/{id}", False, 
-                                    "Update validation failed", proposal)
-                    return False
-            else:
-                print_test_result("PUT /api/proposals/{id}", False, 
-                                "Response missing 'proposal' object", data)
-                return False
-        else:
-            print_test_result("PUT /api/proposals/{id}", False, 
-                            f"Expected 200, got {response.status_code}", response.text)
-            return False
             
-    except Exception as e:
-        print_test_result("PUT /api/proposals/{id}", False, f"Exception: {str(e)}")
-        return False
-
-def test_delete_proposal(proposal_id):
-    """Test DELETE /api/proposals/{id} - delete proposal"""
-    try:
-        print(f"🧪 Testing DELETE /api/proposals/{proposal_id}...")
-        response = requests.delete(f"{API_BASE}/proposals/{proposal_id}", timeout=10)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if 'message' in data:
-                print_test_result("DELETE /api/proposals/{id}", True, 
-                                f"Status: {response.status_code}, {data['message']}")
+            all_passed = True
+            for field, expected in checks:
+                if field not in proposal:
+                    print(f"❌ FAIL - Missing field: {field}")
+                    all_passed = False
+                elif isinstance(expected, str) and expected.startswith('data:image'):
+                    if not proposal[field].startswith(expected):
+                        print(f"❌ FAIL - {field} doesn't start with expected format")
+                        all_passed = False
+                    else:
+                        print(f"✅ {field} format correct")
+                elif isinstance(expected, type):
+                    if not isinstance(proposal[field], expected):
+                        print(f"❌ FAIL - {field} is not of type {expected}")
+                        all_passed = False
+                    else:
+                        print(f"✅ {field} type correct ({len(proposal[field])} items)" if expected == list else f"✅ {field} type correct")
+                elif isinstance(expected, str):
+                    if proposal[field] != expected:
+                        print(f"❌ FAIL - {field} value mismatch. Expected: {expected}, Got: {proposal[field]}")
+                        all_passed = False
+                    else:
+                        print(f"✅ {field} value correct")
+            
+            if all_passed:
+                print("✅ PASS - All new fields properly stored and retrieved")
                 return True
             else:
-                print_test_result("DELETE /api/proposals/{id}", False, 
-                                "Response missing success message", data)
+                print("❌ FAIL - Some field validations failed")
                 return False
         else:
-            print_test_result("DELETE /api/proposals/{id}", False, 
-                            f"Expected 200, got {response.status_code}", response.text)
+            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
             return False
             
     except Exception as e:
-        print_test_result("DELETE /api/proposals/{id}", False, f"Exception: {str(e)}")
+        print(f"❌ FAIL - Exception: {str(e)}")
         return False
 
-def test_get_deleted_proposal(proposal_id):
-    """Test GET /api/proposals/{id} - should return 404 after deletion"""
+def test_update_proposal_with_creatives(proposal_id):
+    """Test updating a proposal to modify carouselCreatives"""
+    print("\n=== Testing Update Proposal with Creatives ===")
+    
     try:
-        print(f"🧪 Testing GET /api/proposals/{proposal_id} (after deletion)...")
-        response = requests.get(f"{API_BASE}/proposals/{proposal_id}", timeout=10)
+        print(f"\n1. Updating proposal {proposal_id} with new carousel creatives...")
         
-        if response.status_code == 404:
-            print_test_result("GET /api/proposals/{id} (after deletion)", True, 
-                            f"Status: {response.status_code} - Correctly returned 404 after deletion")
-            return True
+        # Create new carousel creatives
+        new_carousel_creatives = [
+            create_test_image_base64(),
+            create_test_image_base64(),
+            create_test_image_base64(),
+            create_test_image_base64()  # Adding one more image
+        ]
+        
+        update_data = {
+            "carouselCreatives": new_carousel_creatives,
+            "title": "Updated Proposta de Gestão de Conteúdo"
+        }
+        
+        response = requests.put(f"{BASE_URL}/proposals/{proposal_id}", json=update_data)
+        
+        if response.status_code == 200:
+            data = response.json()
+            proposal = data['proposal']
+            
+            # Verify the update worked correctly
+            if (len(proposal['carouselCreatives']) == 4 and 
+                proposal['title'] == "Updated Proposta de Gestão de Conteúdo"):
+                print("✅ PASS - Proposal updated successfully")
+                print(f"New carousel creatives count: {len(proposal['carouselCreatives'])}")
+                print(f"Updated title: {proposal['title']}")
+                return True
+            else:
+                print(f"❌ FAIL - Update verification failed")
+                print(f"Carousel count: {len(proposal['carouselCreatives'])}, Title: {proposal['title']}")
+                return False
         else:
-            print_test_result("GET /api/proposals/{id} (after deletion)", False, 
-                            f"Expected 404, got {response.status_code}", response.text)
+            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
             return False
             
     except Exception as e:
-        print_test_result("GET /api/proposals/{id} (after deletion)", False, f"Exception: {str(e)}")
+        print(f"❌ FAIL - Exception: {str(e)}")
+        return False
+
+def test_upload_image_endpoint():
+    """Test the upload image endpoint"""
+    print("\n=== Testing Upload Image Endpoint ===")
+    
+    try:
+        print("\n1. Testing image upload...")
+        test_image = create_test_image_base64()
+        
+        response = requests.post(f"{BASE_URL}/upload-image", 
+                               json={"imageData": test_image})
+        
+        if response.status_code == 200:
+            data = response.json()
+            if 'imageUrl' in data and data['imageUrl'] == test_image:
+                print("✅ PASS - Image upload endpoint working correctly")
+                return True
+            else:
+                print("❌ FAIL - Image URL not returned correctly")
+                return False
+        else:
+            print(f"❌ FAIL - Status: {response.status_code}, Response: {response.text}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ FAIL - Exception: {str(e)}")
         return False
 
 def main():
-    """Run all backend API tests"""
-    print("=" * 80)
-    print("🚀 PROPOSAL GENERATOR API TESTING")
-    print("=" * 80)
-    print(f"Testing API at: {API_BASE}")
-    print(f"Database: proposal_generator")
-    print(f"Collection: proposals")
-    print("=" * 80)
+    """Run all tests for the updated proposal generator"""
+    print("🚀 Starting Proposal Generator New Features Test Suite")
+    print(f"Testing against: {BASE_URL}")
     
     test_results = []
-    proposal_id = None
     
-    # Test 1: GET all proposals (empty state)
-    test_results.append(test_get_all_proposals_empty())
+    # Test 1: AI Generation Endpoint
+    test_results.append(("AI Generation Endpoint", test_ai_generate_endpoint()))
     
-    # Test 2: POST create proposal
-    proposal_id = test_create_proposal()
-    test_results.append(proposal_id is not None)
+    # Test 2: Upload Image Endpoint
+    test_results.append(("Upload Image Endpoint", test_upload_image_endpoint()))
+    
+    # Test 3: Create Proposal with New Fields
+    proposal_id = test_create_proposal_with_new_fields()
+    test_results.append(("Create Proposal with New Fields", proposal_id is not None))
     
     if proposal_id:
-        # Test 3: GET single proposal
-        test_results.append(test_get_single_proposal(proposal_id))
+        # Test 4: Retrieve Proposal with New Fields
+        test_results.append(("Retrieve Proposal with New Fields", 
+                           test_retrieve_proposal_with_new_fields(proposal_id)))
         
-        # Test 4: GET non-existent proposal (404)
-        test_results.append(test_get_nonexistent_proposal())
-        
-        # Test 5: PUT update proposal
-        test_results.append(test_update_proposal(proposal_id))
-        
-        # Test 6: DELETE proposal
-        test_results.append(test_delete_proposal(proposal_id))
-        
-        # Test 7: GET deleted proposal (404)
-        test_results.append(test_get_deleted_proposal(proposal_id))
+        # Test 5: Update Proposal with Creatives
+        test_results.append(("Update Proposal with Creatives", 
+                           test_update_proposal_with_creatives(proposal_id)))
     else:
-        print("⚠️  Skipping remaining tests due to failed proposal creation")
-        test_results.extend([False] * 5)  # Mark remaining tests as failed
+        test_results.append(("Retrieve Proposal with New Fields", False))
+        test_results.append(("Update Proposal with Creatives", False))
     
-    # Summary
-    print("=" * 80)
-    print("📊 TEST SUMMARY")
-    print("=" * 80)
-    passed = sum(test_results)
+    # Print final results
+    print("\n" + "="*60)
+    print("🏁 FINAL TEST RESULTS")
+    print("="*60)
+    
+    passed = 0
     total = len(test_results)
     
-    print(f"Tests Passed: {passed}/{total}")
-    print(f"Success Rate: {(passed/total)*100:.1f}%")
+    for test_name, result in test_results:
+        status = "✅ PASS" if result else "❌ FAIL"
+        print(f"{status} - {test_name}")
+        if result:
+            passed += 1
+    
+    print(f"\nSUMMARY: {passed}/{total} tests passed")
     
     if passed == total:
-        print("🎉 All tests passed! API is working correctly.")
+        print("🎉 ALL TESTS PASSED! New features are working correctly.")
         return 0
     else:
-        print("❌ Some tests failed. Check the details above.")
+        print("⚠️  Some tests failed. Please check the implementation.")
         return 1
 
 if __name__ == "__main__":
