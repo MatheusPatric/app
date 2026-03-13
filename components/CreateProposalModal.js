@@ -488,9 +488,95 @@ export default function CreateProposalModal({ isOpen, onClose, proposal }) {
               </div>
             </div>
 
-            {/* Expected Results */}
+            {/* Main Creative (1080x1350) */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-lime-400">Resultados Esperados (Opcional)</h3>
+              <h3 className="text-lg font-semibold text-lime-400">Criativo Principal do Cliente (1080x1350)</h3>
+              <div
+                {...mainCreativeDropzone.getRootProps()}
+                className="border-2 border-dashed border-zinc-700 rounded-lg p-8 text-center cursor-pointer hover:border-lime-400 transition-colors"
+              >
+                <input {...mainCreativeDropzone.getInputProps()} />
+                {formData.mainCreative ? (
+                  <img
+                    src={formData.mainCreative}
+                    alt="Main Creative"
+                    className="max-h-64 mx-auto rounded"
+                  />
+                ) : (
+                  <div className="text-zinc-400">
+                    <Upload className="w-8 h-8 mx-auto mb-2" />
+                    <p>Criativo principal do cliente (1080x1350)</p>
+                    <p className="text-xs mt-1">Será exibido em destaque na proposta</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Carousel Creatives */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-lime-400">Exemplos de Criativos (Carousel)</h3>
+              <p className="text-sm text-zinc-400">Adicione exemplos de trabalhos anteriores para exibir em carousel</p>
+              <div
+                {...carouselCreativesDropzone.getRootProps()}
+                className="border-2 border-dashed border-zinc-700 rounded-lg p-6 text-center cursor-pointer hover:border-lime-400 transition-colors"
+              >
+                <input {...carouselCreativesDropzone.getInputProps()} />
+                <div className="text-zinc-400">
+                  <Upload className="w-6 h-6 mx-auto mb-2" />
+                  <p className="text-sm">Clique ou arraste múltiplas imagens</p>
+                </div>
+              </div>
+              
+              {formData.carouselCreatives?.length > 0 && (
+                <div className="grid grid-cols-3 gap-3">
+                  {formData.carouselCreatives.map((creative, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={creative}
+                        alt={`Carousel ${index + 1}`}
+                        className="w-full h-32 object-cover rounded"
+                      />
+                      <Button
+                        type="button"
+                        onClick={() => removeCarouselCreative(index)}
+                        size="sm"
+                        variant="ghost"
+                        className="absolute top-1 right-1 bg-red-500/80 hover:bg-red-600 text-white p-1 h-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Expected Results with AI */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-lime-400">Resultados Esperados (Opcional)</h3>
+                <Button
+                  type="button"
+                  onClick={() => handleAIHelp('expectedResults')}
+                  disabled={aiGenerating}
+                  size="sm"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                >
+                  {aiGenerating && aiFieldType === 'expectedResults' ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      IA Ajudar
+                    </>
+                  )}
+                </Button>
+              </div>
               <Textarea
                 name="expectedResults"
                 value={formData.expectedResults}
@@ -501,9 +587,32 @@ export default function CreateProposalModal({ isOpen, onClose, proposal }) {
               />
             </div>
 
-            {/* Custom Notes */}
+            {/* Custom Notes with AI */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-lime-400">Notas Personalizadas (Opcional)</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-lime-400">Notas Personalizadas (Opcional)</h3>
+                <Button
+                  type="button"
+                  onClick={() => handleAIHelp('customNotes')}
+                  disabled={aiGenerating}
+                  size="sm"
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+                >
+                  {aiGenerating && aiFieldType === 'customNotes' ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      IA Ajudar
+                    </>
+                  )}
+                </Button>
+              </div>
               <Textarea
                 name="customNotes"
                 value={formData.customNotes}
