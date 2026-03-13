@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2, MessageCircle, ArrowLeft, Copy, ExternalLink, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,10 +10,12 @@ import confetti from 'canvas-confetti';
 export default function ObrigadoPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [proposal, setProposal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const selectedPlan = searchParams.get('plan');
 
   useEffect(() => {
     if (params?.id) {
@@ -90,9 +92,10 @@ export default function ObrigadoPage() {
     if (!proposal) return;
     
     const proposalUrl = getProposalUrl();
+    const planText = selectedPlan ? `\n\nPlano escolhido: ${selectedPlan}` : '';
     const message = `Olá! 🎉
 
-Acabei de aceitar a proposta de gestão de conteúdo!
+Acabei de aceitar a proposta de gestão de conteúdo!${planText}
 
 Estou muito animado(a) para começar essa parceria com a ${proposal.brandName || 'Zeri Solutions'}!
 
@@ -153,6 +156,12 @@ Podemos conversar sobre os próximos passos?`;
             <h2 className="text-2xl font-bold text-white mb-4">
               Obrigado pela Confiança!
             </h2>
+            {selectedPlan && (
+              <div className="mb-4 inline-flex items-center gap-2 bg-lime-400/20 border-2 border-lime-400 rounded-lg px-6 py-3">
+                <CheckCircle2 className="w-5 h-5 text-lime-400" />
+                <span className="text-white font-bold">Plano: {selectedPlan}</span>
+              </div>
+            )}
             <p className="text-zinc-300 text-lg leading-relaxed">
               Estamos muito felizes em tê-lo(a) como cliente da <span className="text-lime-400 font-semibold">{proposal.brandName || 'Zeri Solutions'}</span>!
             </p>
