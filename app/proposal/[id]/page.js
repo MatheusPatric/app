@@ -63,24 +63,24 @@ export default function ProposalPage() {
     try {
       const element = contentRef.current;
       
-      // Capture the entire page with proper settings
+      // Capture with mobile width for better PDF layout
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
         backgroundColor: '#000000',
-        windowWidth: 1920,
+        windowWidth: 414,  // iPhone Pro Max width - mobile layout
         windowHeight: element.scrollHeight,
       });
 
       const imgData = canvas.toDataURL('image/png');
       
-      // Create PDF
+      // Create PDF with portrait orientation
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'px',
-        format: 'a4',
+        format: [414, 896], // Mobile dimensions
       });
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
