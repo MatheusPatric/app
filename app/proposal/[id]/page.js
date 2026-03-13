@@ -57,48 +57,58 @@ export default function ProposalPage() {
   };
 
   const handleExportPDF = async () => {
-    if (!proposal) return;
+    if (!contentRef.current) return;
     
     setExporting(true);
     try {
+      const element = contentRef.current;
+      
+      // Capture the entire page with proper settings
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#000000',
+        windowWidth: 1920,
+        windowHeight: element.scrollHeight,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Create PDF
       const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'mm',
+        unit: 'px',
         format: 'a4',
       });
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
-      const contentWidth = pageWidth - (margin * 2);
-      let yPosition = margin;
-
-      // Helper function to add new page if needed
-      const checkAddPage = (heightNeeded) => {
-        if (yPosition + heightNeeded > pageHeight - margin) {
-          pdf.addPage();
-          yPosition = margin;
-          return true;
-        }
-        return false;
-      };
-
-      // Helper function to add image from base64
-      const addImageToPDF = async (imageUrl, x, y, width, height) => {
-        try {
-          if (imageUrl && imageUrl.startsWith('data:image')) {
-            pdf.addImage(imageUrl, 'PNG', x, y, width, height);
-          }
-        } catch (error) {
-          console.error('Error adding image:', error);
-        }
-      };
-
-      // 1. HEADER - Logo
-      if (proposal.clientLogo) {
-        await addImageToPDF(proposal.clientLogo, margin, yPosition, 30, 30);
-        yPosition += 35;
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      
+      // Calculate how many pages we need
+      const ratio = pdfWidth / imgWidth;
+      const scaledHeight = imgHeight * ratio;
+      const totalPages = Math.ceil(scaledHeight / pdfHeight);
+      
+      // Add pages
+      for (let i = 0; i < totalPages; i++) {
+        if (i > 0) pdf.addPage();
+        
+        const position = -i * pdfHeight;
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, scaledHeight);
       }
+
+      pdf.save(`proposta-${proposal.companyName}.pdf`);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Erro ao exportar PDF. Tente novamente.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
       // 2. TITLE
       pdf.setFontSize(24);
