@@ -177,6 +177,78 @@ backend:
           agent: "testing"
           comment: "✅ PASS - MongoDB connection successful. Database: proposal_generator, Collection: proposals. Connection pooling and error handling working correctly."
 
+  - task: "POST /api/ai-generate - AI text generation for expectedResults"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ PASS - Status: 200, AI generation for expectedResults working correctly. Returns appropriate Portuguese text with bullet points for expected results."
+
+  - task: "POST /api/ai-generate - AI text generation for customNotes"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ PASS - Status: 200, AI generation for customNotes working correctly. Returns appropriate Portuguese text for custom proposal notes."
+
+  - task: "POST /api/upload-image - Image upload endpoint"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ PASS - Status: 200, Image upload endpoint working correctly. Accepts base64 image data and returns imageUrl."
+
+  - task: "Create proposal with new fields (mainCreative, carouselCreatives, expectedResults, customNotes)"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ PASS - Status: 201, Successfully creates proposals with all new fields: mainCreative (base64 image), carouselCreatives array, expectedResults, customNotes, and pre-filled Zeri Solutions data (brandName, contactEmail, contactWhatsApp)."
+
+  - task: "Retrieve proposal with new fields verification"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ PASS - Status: 200, All new fields properly stored and retrieved: mainCreative format correct, carouselCreatives array with correct count, expectedResults and customNotes text fields, and all Zeri Solutions pre-filled data values correct."
+
+  - task: "Update proposal with carouselCreatives modification"
+    implemented: true
+    working: true
+    file: "app/api/[[...path]]/route.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "testing"
+          comment: "✅ PASS - Status: 200, Successfully updates proposal with modified carouselCreatives array (added 4th image) and title update. All changes persisted correctly."
+
 frontend:
   # Frontend testing not performed as per instructions
 
