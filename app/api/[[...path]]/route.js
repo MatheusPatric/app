@@ -1,3 +1,11 @@
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
+
 import { MongoClient } from 'mongodb';
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
